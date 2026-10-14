@@ -1,20 +1,20 @@
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Wallet, TrendingUp, TrendingDown, ArrowDownToLine } from 'lucide-react';
+import { getUserWalletData, getUserTransactionsData } from '../services/userDataService';
 
 export function WalletPage() {
-  // Données simulées - en production : appel API backend
-  const walletData = {
-    balance: 2500,
-    totalDeposits: 5000,
-    totalWinnings: 4000,
-    totalWithdrawals: 1500,
-  };
+  // Utiliser le service de données utilisateur pour une source de vérité unique
+  const walletData = getUserWalletData();
+  const transactionsData = getUserTransactionsData();
 
-  const transactions = [
-    { id: 1, type: 'WIN', description: 'Gain ticket CHN-2024-00002', amount: 500, date: '2024-03-21' },
-    { id: 2, type: 'PURCHASE', description: 'Achat ticket CHN-2024-00003', amount: -100, date: '2024-03-22' },
-    { id: 3, type: 'WITHDRAWAL', description: 'Retrait MonCash', amount: -1000, date: '2024-03-24' },
-  ];
+  // Formater les transactions pour l'affichage
+  const transactions = transactionsData.transactions.map(tx => ({
+    id: tx.id,
+    type: tx.type,
+    description: tx.description,
+    amount: tx.creditAccount.includes('u1') ? tx.amount : -tx.amount,
+    date: tx.createdAt.split('T')[0],
+  }));
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #07162E 0%, #0B1F3A 100%)' }}>
@@ -53,10 +53,10 @@ export function WalletPage() {
 
         {/* Actions */}
         <div className="grid md:grid-cols-2 gap-4 mb-8">
-          <button className="btn-premium flex items-center justify-center gap-2">
+          <Link to="/retrait" className="btn-premium flex items-center justify-center gap-2">
             <ArrowDownToLine className="w-5 h-5" />
-            Retirer vers MonCash
-          </button>
+            Retirer
+          </Link>
           <button className="btn-secondary flex items-center justify-center gap-2">
             <TrendingUp className="w-5 h-5" />
             Déposer des fonds

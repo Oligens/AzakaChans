@@ -6,6 +6,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { ArchitecturePage } from './pages/ArchitecturePage';
 import { WalletPage } from './pages/WalletPage';
 import { TicketsPage } from './pages/TicketsPage';
+import { WithdrawalPage } from './pages/WithdrawalPage';
 import { HelpPage } from './pages/HelpPage';
 import { ContactPage } from './pages/ContactPage';
 import { FAQPage } from './pages/FAQPage';
@@ -30,6 +31,7 @@ function App() {
         <Route path="/boutique" element={<ShopPage />} />
         <Route path="/portefeuille" element={<WalletPage />} />
         <Route path="/mes-tickets" element={<TicketsPage />} />
+        <Route path="/retrait" element={<WithdrawalPage />} />
         
         {/* Pages Informatives */}
         <Route path="/aide" element={<HelpPage />} />

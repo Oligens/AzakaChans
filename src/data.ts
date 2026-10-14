@@ -43,10 +43,14 @@ export const mockUsers: User[] = [
 // PORTEFEUILLES
 // ============================================================
 
+// Les valeurs sont calculées à partir des transactions réelles
+// u1: Dépôts 5000 + Gains (500+1000) - Achats (100+100) - Retraits 1500 = 4800
+// u2: Dépôts 2000 + Gains (10000+250) - Achats (100+250) - Retraits 1000 = 10900
+// u4: Dépôts 10000 + Gains (50+100000+5000) - Achats (250+500) - Retraits 0 = 114750
 export const mockWallets: Record<string, Wallet> = {
-  u1: { userId: 'u1', balance: 2500, totalDeposits: 5000, totalWithdrawals: 1500, totalWinnings: 4000 },
-  u2: { userId: 'u2', balance: 750, totalDeposits: 2000, totalWithdrawals: 1000, totalWinnings: 1750 },
-  u4: { userId: 'u4', balance: 15000, totalDeposits: 10000, totalWithdrawals: 0, totalWinnings: 25000 },
+  u1: { userId: 'u1', balance: 4800, totalDeposits: 5000, totalWithdrawals: 1500, totalWinnings: 1500 },
+  u2: { userId: 'u2', balance: 10900, totalDeposits: 2000, totalWithdrawals: 1000, totalWinnings: 10250 },
+  u4: { userId: 'u4', balance: 114750, totalDeposits: 10000, totalWithdrawals: 0, totalWinnings: 105050 },
 };
 
 // ============================================================

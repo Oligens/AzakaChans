@@ -1,14 +1,47 @@
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Ticket, CheckCircle, Clock, Lock } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowLeft, Ticket, CheckCircle, Clock, Lock, Loader2 } from 'lucide-react';
+import { getUserTicketsData, revealTicket } from '../services/userDataService';
 
 export function TicketsPage() {
-  // Données simulées - en production : appel API backend
-  const tickets = [
-    { id: 'CHN-2024-00002', type: 'PHYSICAL', status: 'REVEALED', price: 100, prize: 500, date: '2024-03-21' },
-    { id: 'CHN-2024-00003', type: 'PHYSICAL', status: 'REDEEMED', price: 100, prize: 10000, date: '2024-03-22' },
-    { id: 'CHN-2024-00009', type: 'VIRTUAL', status: 'REDEEMED', price: 250, prize: 1000, date: '2024-04-09' },
-    { id: 'CHN-2024-00001', type: 'PHYSICAL', status: 'SOLD', price: 100, prize: null, date: '2024-03-20' },
-  ];
+  const [revealingTicket, setRevealingTicket] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Utiliser le service de données utilisateur pour une source de vérité unique
+  const ticketsData = getUserTicketsData();
+  
+  // Formater les tickets pour l'affichage
+  const tickets = ticketsData.tickets.map(t => ({
+    id: t.publicId,
+    ticketId: t.id,
+    type: t.type,
+    status: t.status,
+    price: t.price,
+    prize: t.prizeAmount,
+    date: t.purchasedAt || '',
+  }));
+
+  const handleReveal = async (ticketId: string) => {
+    setRevealingTicket(ticketId);
+    
+    try {
+      // Simuler un délai réseau
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const result = revealTicket(ticketId);
+      
+      if (result.success) {
+        // Rafraîchir les données
+        setRefreshKey(prev => prev + 1);
+      } else {
+        alert(result.error || 'Une erreur est survenue');
+      }
+    } catch (error) {
+      alert('Impossible de révéler ce ticket. Veuillez réessayer.');
+    } finally {
+      setRevealingTicket(null);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; color: string }> = {
@@ -102,8 +135,19 @@ export function TicketsPage() {
               <div className="flex items-center justify-between text-xs" style={{ color: '#AAB7C9' }}>
                 <span>Acheté: {ticket.date}</span>
                 {ticket.status === 'SOLD' && (
-                  <button className="btn-premium text-xs py-1 px-3">
-                    Révéler
+                  <button 
+                    onClick={() => handleReveal(ticket.ticketId)}
+                    disabled={revealingTicket === ticket.ticketId}
+                    className="btn-premium text-xs py-1 px-3 flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {revealingTicket === ticket.ticketId ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        Révélation...
+                      </>
+                    ) : (
+                      'Révéler'
+                    )}
                   </button>
                 )}
               </div>
