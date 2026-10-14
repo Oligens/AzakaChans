@@ -1,18 +1,27 @@
 import { Link } from 'react-router-dom';
-import { Sparkles, Ticket, Wallet, Shield, ArrowRight, Star } from 'lucide-react';
+import { Sparkles, Ticket, Wallet, Shield, ArrowRight } from 'lucide-react';
+import { HeroSection } from '../components/HeroSection';
+import { JackpotSection } from '../components/JackpotSection';
 
 export function HomePage() {
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #07162E 0%, #0B1F3A 100%)' }}>
       {/* Navigation */}
-      <nav className="border-b" style={{ borderColor: 'rgba(212, 175, 55, 0.2)' }}>
+      <nav className="border-b sticky top-0 z-50" style={{ 
+        borderColor: 'rgba(212, 175, 55, 0.2)',
+        background: 'rgba(7, 22, 46, 0.95)',
+        backdropFilter: 'blur(20px)'
+      }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #F2D675 100%)' }}>
                 <Sparkles className="w-6 h-6" style={{ color: '#07162E' }} />
               </div>
-              <span className="text-xl font-bold" style={{ color: '#F5F0E6' }}>AZAKA CHANS</span>
+              <div>
+                <span className="text-xl font-bold block" style={{ color: '#F5F0E6' }}>AZAKA CHANS</span>
+                <span className="text-xs" style={{ color: '#D4AF37' }}>Rasin nou. Chans nou.</span>
+              </div>
             </div>
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Fonctionnalités</a>
@@ -26,67 +35,13 @@ export function HomePage() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <div className="animate-fade-in">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-6" style={{ background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-              <Star className="w-4 h-4" style={{ color: '#D4AF37' }} />
-              <span className="text-sm font-medium" style={{ color: '#D4AF37' }}>Plateforme de loterie sécurisée</span>
-            </div>
-            <h1 className="text-5xl md:text-6xl font-bold mb-6" style={{ color: '#F5F0E6' }}>
-              Votre chance de gagner<br />
-              <span style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #F2D675 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                jusqu'à 100 000 HTG
-              </span>
-            </h1>
-            <p className="text-xl mb-8 max-w-2xl mx-auto" style={{ color: '#AAB7C9' }}>
-              Achetez des tickets physiques ou virtuels, révélez vos gains et retirez-les via MonCash ou NatCash. 
-              Sécurité maximale, transparence totale.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/boutique" className="btn-premium inline-flex items-center justify-center gap-2">
-                Acheter des tickets
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link to="/portefeuille" className="btn-secondary inline-flex items-center justify-center">
-                Mon portefeuille
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Hero Section avec image de fond */}
+      <HeroSection />
 
-      {/* Jackpot Section */}
-      <section id="jackpot" className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="card-premium p-8 md:p-12 text-center animate-pulse-gold">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl mb-6" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #F2D675 100%)' }}>
-              <Sparkles className="w-10 h-10" style={{ color: '#07162E' }} />
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: '#F5F0E6' }}>
-              Jackpot Itinérant
-            </h2>
-            <p className="text-5xl md:text-6xl font-bold mb-4" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #F2D675 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-              100 000 HTG
-            </p>
-            <p className="text-lg mb-6" style={{ color: '#AAB7C9' }}>
-              Un jackpot qui change de catégorie à chaque victoire
-            </p>
-            <div className="flex flex-wrap justify-center gap-4 mb-8">
-              {['50 HTG', '250 HTG', '500 HTG', '1 000 HTG'].map((cat, i) => (
-                <div key={i} className="px-4 py-2 rounded-lg" style={{ background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-                  <span className="text-sm font-medium" style={{ color: '#D4AF37' }}>{cat}</span>
-                </div>
-              ))}
-            </div>
-            <Link to="/boutique" className="btn-premium inline-flex items-center gap-2">
-              Tenter ma chance
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </div>
-        </div>
-      </section>
+      {/* Jackpot Section avec image de pièces */}
+      <div id="jackpot">
+        <JackpotSection />
+      </div>
 
       {/* Features Section */}
       <section id="features" className="py-20 px-4 sm:px-6 lg:px-8">
@@ -174,10 +129,13 @@ export function HomePage() {
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #F2D675 100%)' }}>
                   <Sparkles className="w-6 h-6" style={{ color: '#07162E' }} />
                 </div>
-                <span className="text-xl font-bold" style={{ color: '#F5F0E6' }}>AZAKA CHANS</span>
+                <div>
+                  <span className="text-xl font-bold block" style={{ color: '#F5F0E6' }}>AZAKA CHANS</span>
+                  <span className="text-xs" style={{ color: '#AAB7C9' }}>Rasin nou. Chans nou.</span>
+                </div>
               </div>
               <p className="text-sm" style={{ color: '#AAB7C9' }}>
-                Rasin nou. Chans nou.
+                La loterie haïtienne nouvelle génération.
               </p>
             </div>
             <div>
