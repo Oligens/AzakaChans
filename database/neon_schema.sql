@@ -115,9 +115,9 @@ CREATE INDEX IF NOT EXISTS idx_email_verifications_expires_at ON email_verificat
 CREATE INDEX IF NOT EXISTS idx_email_verifications_created_at ON email_verifications(created_at);
 
 -- Index unique pour le code actif par utilisateur
-CREATE UNIQUE INDEX IF NOT EXISTS idx_email_verifications_active_code 
-    ON email_verifications(user_id) 
-    WHERE status = 'PENDING' AND expires_at > NOW();
+CREATE UNIQUE INDEX IF NOT EXISTS idx_email_verifications_active_code
+    ON email_verifications(user_id)
+    WHERE status = 'PENDING';
 
 -- ============================================================
 -- TABLE: user_profiles
@@ -634,21 +634,12 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- PERMISSIONS ET SÉCURITÉ
 -- ============================================================
 
--- Créer un rôle pour l'application
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'azaka_chans_app') THEN
-        CREATE ROLE azaka_chans_app WITH LOGIN PASSWORD 'CHANGE_THIS_PASSWORD';
-    END IF;
-END
-$$;
-
--- Accorder les permissions nécessaires
-GRANT CONNECT ON DATABASE postgres TO azaka_chans_app;
-GRANT USAGE ON SCHEMA public TO azaka_chans_app;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO azaka_chans_app;
-GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO azaka_chans_app;
-GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO azaka_chans_app;
+-- Ne pas créer ici un rôle applicatif avec un mot de passe par défaut.
+-- Sur Neon, configurez un rôle dédié depuis la console Neon, puis utilisez
+-- sa chaîne de connexion dans DATABASE_URL côté serveur uniquement.
+-- N'accordez pas de privilèges de superutilisateur au rôle applicatif.
+-- Si vous créez un rôle dédié, accordez-lui uniquement les permissions
+-- minimales nécessaires aux tables/fonctions réellement utilisées.
 
 -- ============================================================
 -- FIN DU SCHÉMA
