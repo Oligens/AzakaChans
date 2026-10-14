@@ -149,17 +149,17 @@ export function HomePage() {
             <div>
               <h4 className="font-bold mb-4" style={{ color: '#F5F0E6' }}>Support</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Centre d'aide</a></li>
-                <li><a href="#" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Contact</a></li>
-                <li><a href="#" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>FAQ</a></li>
+                <li><Link to="/aide" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Centre d'aide</Link></li>
+                <li><Link to="/contact" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Contact</Link></li>
+                <li><Link to="/faq" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>FAQ</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="font-bold mb-4" style={{ color: '#F5F0E6' }}>Légal</h4>
               <ul className="space-y-2">
-                <li><a href="#" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Conditions d'utilisation</a></li>
-                <li><a href="#" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Politique de confidentialité</a></li>
-                <li><a href="#" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Jeu responsable</a></li>
+                <li><Link to="/conditions-utilisation" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Conditions d'utilisation</Link></li>
+                <li><Link to="/confidentialite" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Politique de confidentialité</Link></li>
+                <li><Link to="/jeu-responsable" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Jeu responsable</Link></li>
               </ul>
             </div>
           </div>
