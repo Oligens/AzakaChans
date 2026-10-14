@@ -6,6 +6,70 @@
 
 **Notre mission** : Allier héritage culturel haïtien et innovation technologique pour offrir une expérience de loterie transparente, sécurisée et responsable.
 
+## 🚀 Déploiement Rapide
+
+### Prérequis
+
+- Compte [Vercel](https://vercel.com) (gratuit)
+- Compte [Neon](https://neon.tech) (gratuit)
+- Node.js 18+
+- Git
+
+### Installation
+
+```bash
+# Cloner le dépôt
+git clone <repository-url>
+cd azaka-chans
+
+# Installer les dépendances
+npm install
+
+# Copier les variables d'environnement
+cp .env.example .env.local
+
+# Éditer .env.local avec vos valeurs
+# DATABASE_URL=postgresql://...
+# JWT_SECRET=...
+
+# Lancer en développement
+npm run dev
+```
+
+### Déploiement sur Vercel
+
+1. **Configurer Neon PostgreSQL**
+   - Créer un projet sur [Neon](https://neon.tech)
+   - Exécuter `database/neon_schema.sql` dans le SQL Editor
+   - Copier l'URL de connexion
+
+2. **Déployer sur Vercel**
+   - Importer le dépôt Git dans [Vercel](https://vercel.com)
+   - Configurer les variables d'environnement:
+     ```
+     DATABASE_URL=postgresql://...
+     APP_URL=https://votre-domaine.vercel.app
+     JWT_SECRET=votre-secret-jwt
+     ```
+   - Cliquer sur "Deploy"
+
+3. **Vérifier le déploiement**
+   - Accéder à votre URL Vercel
+   - Tester l'inscription
+   - Vérifier la connexion à la base de données
+
+📖 **Guide complet:** Voir [`docs/DEPLOYMENT_VERCEL_NEON.md`](./docs/DEPLOYMENT_VERCEL_NEON.md)
+
+### Application Android (Optionnel)
+
+1. Déployer sur Vercel avec HTTPS
+2. Aller sur [PWABuilder](https://www.pwabuilder.com)
+3. Analyser votre URL
+4. Générer le package Android
+5. Tester et publier sur Play Store
+
+📖 **Guide complet:** Voir [`docs/PWABUILDER_ANDROID.md`](./docs/PWABUILDER_ANDROID.md)
+
 ## ✨ Fonctionnalités Principales
 
 ### Pour les Utilisateurs
