@@ -18,7 +18,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 type Page = 
   | 'user-dashboard' | 'user-shop' | 'user-tickets' | 'user-wallet' | 'user-scan'
-  | 'admin-dashboard' | 'admin-series' | 'admin-financial' | 'admin-withdrawals' 
+  | 'admin-dashboard' | 'admin-jackpot' | 'admin-series' | 'admin-financial' | 'admin-withdrawals' 
   | 'admin-reports' | 'admin-audit' | 'admin-cycles' | 'admin-tests'
   | 'admin-platform-state' | 'admin-claims' | 'admin-ledger'
   | 'architecture';
@@ -38,6 +38,7 @@ function App() {
 
   const adminMenuItems = [
     { id: 'admin-dashboard' as Page, label: 'Vue d\'ensemble', icon: LayoutDashboard },
+    { id: 'admin-jackpot' as Page, label: 'Jackpot Itinérant', icon: Sparkles },
     { id: 'admin-platform-state' as Page, label: 'État Plateforme', icon: Activity },
     { id: 'admin-series' as Page, label: 'Séries & Tickets', icon: Ticket },
     { id: 'admin-financial' as Page, label: 'Moteur Financier', icon: DollarSign },
@@ -157,6 +158,7 @@ function App() {
           {currentPage === 'admin-withdrawals' && <AdminWithdrawals />}
           {currentPage === 'admin-cycles' && <AdminCycles />}
           {currentPage === 'admin-tests' && <AdminTests />}
+          {currentPage === 'admin-jackpot' && <AdminJackpot />}
           {currentPage === 'admin-platform-state' && <AdminPlatformState />}
           {currentPage === 'admin-claims' && <AdminClaims />}
           {currentPage === 'admin-ledger' && <AdminLedger />}
@@ -1250,6 +1252,252 @@ function AdminTests() {
           <Zap className="w-12 h-12 text-blue-400 mx-auto mb-3" />
           <p className="text-blue-700 font-medium">Cliquez sur "Exécuter les tests" pour lancer la suite de tests</p>
           <p className="text-blue-500 text-sm mt-1">Les tests valident le moteur financier, le générateur de tickets et le service de cycle horaire</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// PAGE: JACKPOT ITINÉRANT
+// ============================================================
+
+function AdminJackpot() {
+  const [reserveAmount, setReserveAmount] = useState(100000);
+  const [showActivateModal, setShowActivateModal] = useState(false);
+
+  // Simuler l'état du jackpot (en production: appeler les fonctions du moteur)
+  const [jackpotState, setJackpotState] = useState<'RESERVE_INSUFFISANTE' | 'PRET' | 'ACTIF_50' | 'ACTIF_250' | 'ACTIF_500' | 'ACTIF_1000'>('PRET');
+  const [currentCategory, setCurrentCategory] = useState<50 | 250 | 500 | 1000>(50);
+  const [reserveBalance, setReserveBalance] = useState(100000);
+
+  const stateLabels = {
+    RESERVE_INSUFFISANTE: { label: 'Réserve Insuffisante', color: 'red', icon: AlertCircle },
+    PRET: { label: 'Prêt', color: 'blue', icon: Clock },
+    ACTIF_50: { label: 'Actif - 50 HTG', color: 'green', icon: Sparkles },
+    ACTIF_250: { label: 'Actif - 250 HTG', color: 'green', icon: Sparkles },
+    ACTIF_500: { label: 'Actif - 500 HTG', color: 'green', icon: Sparkles },
+    ACTIF_1000: { label: 'Actif - 1 000 HTG', color: 'green', icon: Sparkles },
+  };
+
+  const currentStateConfig = stateLabels[jackpotState];
+  const StateIcon = currentStateConfig.icon;
+
+  const handleUpdateReserve = () => {
+    setReserveBalance(reserveAmount);
+    if (reserveAmount >= 100000) {
+      setJackpotState('PRET');
+    } else {
+      setJackpotState('RESERVE_INSUFFISANTE');
+    }
+  };
+
+  const handleActivate = () => {
+    if (reserveBalance >= 100000) {
+      setJackpotState(`ACTIF_${currentCategory}` as any);
+      setShowActivateModal(false);
+    }
+  };
+
+  const handleSimulateVictory = () => {
+    // Simuler une victoire
+    setReserveBalance(0);
+    setJackpotState('RESERVE_INSUFFISANTE');
+    
+    // Passer à la catégorie suivante
+    const categories = [50, 250, 500, 1000] as const;
+    const currentIndex = categories.indexOf(currentCategory);
+    const nextIndex = (currentIndex + 1) % categories.length;
+    setCurrentCategory(categories[nextIndex]);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Jackpot Itinérant</h1>
+          <p className="text-gray-500">Gestion du jackpot de 100 000 HTG avec rotation des catégories</p>
+        </div>
+      </div>
+
+      {/* État Actuel */}
+      <div className={`rounded-2xl p-6 border-2 bg-${currentStateConfig.color}-50 border-${currentStateConfig.color}-200`}>
+        <div className="flex items-center gap-4">
+          <div className={`w-16 h-16 rounded-2xl bg-${currentStateConfig.color}-100 flex items-center justify-center`}>
+            <StateIcon className={`w-8 h-8 text-${currentStateConfig.color}-600`} />
+          </div>
+          <div className="flex-1">
+            <p className={`text-sm text-${currentStateConfig.color}-600 font-medium`}>État actuel</p>
+            <h2 className={`text-2xl font-bold text-${currentStateConfig.color}-800`}>{currentStateConfig.label}</h2>
+            <p className={`text-sm text-${currentStateConfig.color}-600`}>
+              {jackpotState === 'RESERVE_INSUFFISANTE' && 'Financement de 100 000 HTG requis'}
+              {jackpotState === 'PRET' && 'Prêt à être activé pour la catégorie 50 HTG'}
+              {jackpotState.startsWith('ACTIF_') && `Jackpot actif pour les tickets de ${currentCategory} HTG`}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-gray-500">Réserve</p>
+            <p className="text-3xl font-bold text-gray-900">{reserveBalance.toLocaleString()}</p>
+            <p className="text-sm text-gray-500">HTG</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Cycle des Catégories */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Cycle des Catégories</h3>
+        <div className="flex items-center justify-between gap-4">
+          {[50, 250, 500, 1000].map((cat, i) => (
+            <div key={cat} className="flex items-center gap-4 flex-1">
+              <div className={`flex-1 p-4 rounded-xl border-2 text-center transition ${
+                cat === currentCategory && jackpotState.startsWith('ACTIF_')
+                  ? 'border-green-500 bg-green-50'
+                  : cat === currentCategory && jackpotState === 'PRET'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 bg-gray-50'
+              }`}>
+                <p className="text-2xl font-bold text-gray-900">{cat}</p>
+                <p className="text-xs text-gray-500">HTG</p>
+                {cat === currentCategory && (
+                  <p className={`text-xs font-medium mt-2 ${
+                    jackpotState.startsWith('ACTIF_') ? 'text-green-600' : 'text-blue-600'
+                  }`}>
+                    {jackpotState.startsWith('ACTIF_') ? 'Actif' : 'Suivante'}
+                  </p>
+                )}
+              </div>
+              {i < 3 && <span className="text-gray-400 text-2xl">→</span>}
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-500">Après 1 000 HTG → retour à 50 HTG</p>
+        </div>
+      </div>
+
+      {/* Gestion de la Réserve */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Gestion de la Réserve</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="text-sm text-gray-600 mb-2 block">Montant de la réserve (HTG)</label>
+            <input
+              type="number"
+              value={reserveAmount}
+              onChange={(e) => setReserveAmount(Number(e.target.value))}
+              className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+              min="0"
+              step="10000"
+            />
+            <p className="text-xs text-gray-400 mt-2">Minimum requis: 100 000 HTG</p>
+            <button
+              onClick={handleUpdateReserve}
+              className="w-full mt-3 bg-blue-600 text-white py-2.5 rounded-xl font-medium text-sm hover:bg-blue-700 transition"
+            >
+              Mettre à jour la réserve
+            </button>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-4">
+            <h4 className="font-medium text-gray-900 mb-3">Règles de financement</h4>
+            <ul className="text-sm text-gray-600 space-y-2">
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Financement intégral de 100 000 HTG obligatoire</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Blocage automatique si réserve insuffisante</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Réapprovisionnement requis après chaque victoire</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <span>Aucun gain ne peut être réduit ou annulé</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <button
+          onClick={() => setShowActivateModal(true)}
+          disabled={jackpotState !== 'PRET' || reserveBalance < 100000}
+          className="bg-green-600 text-white py-4 rounded-2xl font-medium hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Activer le Jackpot
+        </button>
+        <button
+          onClick={handleSimulateVictory}
+          disabled={!jackpotState.startsWith('ACTIF_')}
+          className="bg-yellow-600 text-white py-4 rounded-2xl font-medium hover:bg-yellow-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Simuler une Victoire
+        </button>
+      </div>
+
+      {/* Historique des Victoires */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Historique des Victoires</h3>
+        <div className="space-y-3">
+          {[
+            { date: '2024-04-08', user: 'Jean Pierre', category: 50, amount: 100000, status: 'PAID' },
+            { date: '2024-03-25', user: 'Marie Joseph', category: 1000, amount: 100000, status: 'PAID' },
+            { date: '2024-03-10', user: 'Claudette François', category: 500, amount: 100000, status: 'PAID' },
+          ].map((victory, i) => (
+            <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-gray-50">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">{victory.user}</p>
+                  <p className="text-sm text-gray-500">Catégorie {victory.category} HTG • {victory.date}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xl font-bold text-green-600">{victory.amount.toLocaleString()} HTG</p>
+                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">{victory.status}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Modal d'Activation */}
+      {showActivateModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowActivateModal(false)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-4">Activer le Jackpot</h3>
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+              <p className="text-sm text-blue-700">
+                <strong>Catégorie:</strong> {currentCategory} HTG<br/>
+                <strong>Montant:</strong> 100 000 HTG<br/>
+                <strong>Réserve disponible:</strong> {reserveBalance.toLocaleString()} HTG
+              </p>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">
+              Cette action activera le jackpot pour les tickets de {currentCategory} HTG. 
+              Les utilisateurs pourront gagner 100 000 HTG en révélant un ticket gagnant.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowActivateModal(false)}
+                className="flex-1 py-2.5 bg-gray-100 rounded-xl text-sm font-medium hover:bg-gray-200 transition"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleActivate}
+                className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 transition"
+              >
+                Confirmer
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -20,4 +20,5 @@ export * from './ledgerService';
 export * from './paymentService';
 export * from './platformStateService';
 export * from './claimService';
+export * from './jackpotEngine';
 export { getTestResults, runAllTests } from './tests';

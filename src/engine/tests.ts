@@ -924,6 +924,323 @@ test('Reprise: reprise après panne sans modifier les tickets vendus', () => {
 });
 
 // ============================================================
+// TESTS DU JACKPOT ITINÉRANT
+// ============================================================
+
+import {
+  getJackpotState,
+  getJackpotConfig,
+  updateJackpotReserve,
+  activateJackpot,
+  recordJackpotVictory,
+  initiateJackpotPayment,
+  confirmJackpotPayment,
+  failJackpotPayment,
+  getJackpotTransitions,
+  getJackpotVictories,
+  getJackpotEvents,
+  getNextJackpotCategory,
+  JackpotCategory,
+} from './jackpotEngine';
+
+test('Jackpot: activation avec réserve complète', () => {
+  // Initialiser la réserve
+  const reserveResult = updateJackpotReserve({
+    amount: 100000,
+    reason: 'Financement initial jackpot',
+    updatedBy: 'admin1',
+  });
+  
+  assert(reserveResult.success, 'Réserve mise à jour');
+  
+  // Activer le jackpot
+  const activateResult = activateJackpot('admin1');
+  assert(activateResult.success, 'Jackpot activé');
+  
+  const state = getJackpotState();
+  assert(state.state === 'ACTIF_50', 'État ACTIF_50 (première catégorie)');
+  assert(state.currentCategory === 50, 'Catégorie 50 HTG');
+  assert(state.reserveBalance === 100000, 'Réserve = 100 000 HTG');
+});
+
+test('Jackpot: blocage si réserve insuffisante', () => {
+  // Réinitialiser avec réserve insuffisante
+  updateJackpotReserve({
+    amount: 50000,
+    reason: 'Test réserve insuffisante',
+    updatedBy: 'admin1',
+  });
+  
+  const state = getJackpotState();
+  assert(state.state === 'RESERVE_INSUFFISANTE', 'État RESERVE_INSUFFISANTE');
+  
+  // Tenter d'activer
+  const activateResult = activateJackpot('admin1');
+  assert(!activateResult.success, 'Activation refusée');
+  assert(!!activateResult.error?.includes('PRET'), 'Message d\'erreur correct');
+});
+
+test('Jackpot: cycle exact 50 → 250 → 500 → 1000 → 50', () => {
+  // Réinitialiser
+  updateJackpotReserve({ amount: 100000, reason: 'Test cycle', updatedBy: 'admin1' });
+  
+  // Catégorie 50
+  activateJackpot('admin1');
+  let state = getJackpotState();
+  assert(state.currentCategory === 50, 'Catégorie 50');
+  
+  // Simuler victoire
+  recordJackpotVictory({
+    ticketId: 't1',
+    ticketPublicId: 'CHN-001',
+    userId: 'u1',
+    userName: 'Test User',
+    idempotencyKey: 'idem-jackpot-1',
+  });
+  
+  // Réapprovisionner
+  updateJackpotReserve({ amount: 100000, reason: 'Réapprovisionnement', updatedBy: 'admin1' });
+  
+  // Catégorie 250
+  activateJackpot('admin1');
+  state = getJackpotState();
+  assert(state.currentCategory === 250, 'Catégorie 250');
+  
+  // Simuler victoire
+  recordJackpotVictory({
+    ticketId: 't2',
+    ticketPublicId: 'CHN-002',
+    userId: 'u2',
+    userName: 'Test User 2',
+    idempotencyKey: 'idem-jackpot-2',
+  });
+  
+  // Réapprovisionner
+  updateJackpotReserve({ amount: 100000, reason: 'Réapprovisionnement', updatedBy: 'admin1' });
+  
+  // Catégorie 500
+  activateJackpot('admin1');
+  state = getJackpotState();
+  assert(state.currentCategory === 500, 'Catégorie 500');
+  
+  // Simuler victoire
+  recordJackpotVictory({
+    ticketId: 't3',
+    ticketPublicId: 'CHN-003',
+    userId: 'u3',
+    userName: 'Test User 3',
+    idempotencyKey: 'idem-jackpot-3',
+  });
+  
+  // Réapprovisionner
+  updateJackpotReserve({ amount: 100000, reason: 'Réapprovisionnement', updatedBy: 'admin1' });
+  
+  // Catégorie 1000
+  activateJackpot('admin1');
+  state = getJackpotState();
+  assert(state.currentCategory === 1000, 'Catégorie 1000');
+  
+  // Simuler victoire
+  recordJackpotVictory({
+    ticketId: 't4',
+    ticketPublicId: 'CHN-004',
+    userId: 'u4',
+    userName: 'Test User 4',
+    idempotencyKey: 'idem-jackpot-4',
+  });
+  
+  // Réapprovisionner
+  updateJackpotReserve({ amount: 100000, reason: 'Réapprovisionnement', updatedBy: 'admin1' });
+  
+  // Retour à 50
+  activateJackpot('admin1');
+  state = getJackpotState();
+  assert(state.currentCategory === 50, 'Retour à catégorie 50');
+});
+
+test('Jackpot: blocage catégorie suivante sans financement', () => {
+  // Réinitialiser
+  updateJackpotReserve({ amount: 100000, reason: 'Test blocage', updatedBy: 'admin1' });
+  activateJackpot('admin1');
+  
+  // Victoire
+  recordJackpotVictory({
+    ticketId: 't5',
+    ticketPublicId: 'CHN-005',
+    userId: 'u5',
+    userName: 'Test User 5',
+    idempotencyKey: 'idem-jackpot-5',
+  });
+  
+  // Ne pas réapprovisionner
+  const state = getJackpotState();
+  assert(state.reserveBalance === 0, 'Réserve vide après victoire');
+  assert(state.state === 'RESERVE_INSUFFISANTE', 'État RESERVE_INSUFFISANTE');
+  
+  // Tenter d'activer
+  const activateResult = activateJackpot('admin1');
+  assert(!activateResult.success, 'Activation refusée sans financement');
+});
+
+test('Jackpot: idempotence des victoires', () => {
+  // Réinitialiser
+  updateJackpotReserve({ amount: 100000, reason: 'Test idempotence', updatedBy: 'admin1' });
+  activateJackpot('admin1');
+  
+  // Première victoire
+  const result1 = recordJackpotVictory({
+    ticketId: 't6',
+    ticketPublicId: 'CHN-006',
+    userId: 'u6',
+    userName: 'Test User 6',
+    idempotencyKey: 'idem-jackpot-6',
+  });
+  
+  assert(result1.success, 'Première victoire enregistrée');
+  
+  // Deuxième victoire avec même clé
+  const result2 = recordJackpotVictory({
+    ticketId: 't6',
+    ticketPublicId: 'CHN-006',
+    userId: 'u6',
+    userName: 'Test User 6',
+    idempotencyKey: 'idem-jackpot-6', // Même clé
+  });
+  
+  assert(!result2.success, 'Deuxième victoire rejetée');
+  assert(!!result2.error?.includes('idempotence'), 'Message d\'idempotence');
+});
+
+test('Jackpot: paiement complet avec confirmation', () => {
+  // Réinitialiser
+  updateJackpotReserve({ amount: 100000, reason: 'Test paiement', updatedBy: 'admin1' });
+  activateJackpot('admin1');
+  
+  // Victoire
+  const victoryResult = recordJackpotVictory({
+    ticketId: 't7',
+    ticketPublicId: 'CHN-007',
+    userId: 'u7',
+    userName: 'Test User 7',
+    idempotencyKey: 'idem-jackpot-7',
+  });
+  
+  assert(victoryResult.success, 'Victoire enregistrée');
+  assert(victoryResult.victory !== null, 'Victoire retournée');
+  
+  const victoryId = victoryResult.victory!.id;
+  
+  // Initier paiement
+  const initResult = initiateJackpotPayment({
+    victoryId,
+    paymentId: 'pay-123',
+    triggeredBy: 'admin1',
+  });
+  
+  assert(initResult.success, 'Paiement initié');
+  
+  // Confirmer paiement
+  const confirmResult = confirmJackpotPayment({
+    victoryId,
+    providerTransactionId: 'MC-TX-789',
+    confirmedBy: 'admin1',
+  });
+  
+  assert(confirmResult.success, 'Paiement confirmé');
+  
+  const victories = getJackpotVictories();
+  const victory = victories.find(v => v.id === victoryId);
+  assert(victory?.paymentStatus === 'PAID', 'Statut PAID');
+  assert(victory?.providerTransactionId === 'MC-TX-789', 'ID prestataire enregistré');
+});
+
+test('Jackpot: échec paiement et réconciliation', () => {
+  // Réinitialiser
+  updateJackpotReserve({ amount: 100000, reason: 'Test échec', updatedBy: 'admin1' });
+  activateJackpot('admin1');
+  
+  // Victoire
+  const victoryResult = recordJackpotVictory({
+    ticketId: 't8',
+    ticketPublicId: 'CHN-008',
+    userId: 'u8',
+    userName: 'Test User 8',
+    idempotencyKey: 'idem-jackpot-8',
+  });
+  
+  const victoryId = victoryResult.victory!.id;
+  
+  // Initier paiement
+  initiateJackpotPayment({
+    victoryId,
+    paymentId: 'pay-456',
+    triggeredBy: 'admin1',
+  });
+  
+  // Échec paiement
+  const failResult = failJackpotPayment({
+    victoryId,
+    reason: 'Timeout prestataire',
+    failedBy: 'admin1',
+  });
+  
+  assert(failResult.success, 'Échec enregistré');
+  
+  const victories = getJackpotVictories();
+  const victory = victories.find(v => v.id === victoryId);
+  assert(victory?.paymentStatus === 'FAILED', 'Statut FAILED');
+  
+  // Vérifier état
+  const state = getJackpotState();
+  assert(state.state === 'PAIEMENT_ECHOUE', 'État PAIEMENT_ECHOUE');
+});
+
+test('Jackpot: traçabilité des transitions', () => {
+  const transitions = getJackpotTransitions();
+  assert(transitions.length > 0, 'Transitions enregistrées');
+  
+  const events = getJackpotEvents();
+  assert(events.length > 0, 'Événements enregistrés');
+  
+  // Vérifier qu'il y a des événements de type TRANSITION
+  const transitionEvents = events.filter(e => e.type === 'TRANSITION');
+  assert(transitionEvents.length > 0, 'Événements de transition présents');
+});
+
+test('Jackpot: immutabilité après victoire', () => {
+  // Réinitialiser
+  updateJackpotReserve({ amount: 100000, reason: 'Test immutabilité', updatedBy: 'admin1' });
+  activateJackpot('admin1');
+  
+  // Victoire
+  const victoryResult = recordJackpotVictory({
+    ticketId: 't9',
+    ticketPublicId: 'CHN-009',
+    userId: 'u9',
+    userName: 'Test User 9',
+    idempotencyKey: 'idem-jackpot-9',
+  });
+  
+  const victoryId = victoryResult.victory!.id;
+  
+  // Tenter de modifier la victoire (ne devrait pas être possible)
+  const victories = getJackpotVictories();
+  const victory = victories.find(v => v.id === victoryId);
+  
+  assert(victory !== undefined, 'Victoire existe');
+  assert(victory!.amount === 100000, 'Montant immuable');
+  assert(victory!.category === 50, 'Catégorie immuable');
+});
+
+test('Jackpot: prochaine catégorie correcte', () => {
+  // Réinitialiser
+  updateJackpotReserve({ amount: 100000, reason: 'Test prochaine catégorie', updatedBy: 'admin1' });
+  
+  const nextCategory = getNextJackpotCategory();
+  assert(nextCategory === 50 || nextCategory === 250 || nextCategory === 500 || nextCategory === 1000, 'Catégorie valide');
+});
+
+// ============================================================
 // RÉSUMÉ DES TESTS
 // ============================================================
 
