@@ -1,0 +1,30 @@
+name: Build and typecheck
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, "setup/neon-production"]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Reconcile lockfile after dependency updates
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Install dependencies
+        run: npm ci
+      - name: TypeScript check
+        run: npm run typecheck
+      - name: Production build
+        run: npm run build
