@@ -2,7 +2,7 @@
 
 ## ✅ Mission Accomplie
 
-Le moteur de jackpot itinérant a été **complètement implémenté, testé et intégré** à l'architecture existante de ChansAyiti.
+Le moteur de jackpot itinérant a été **complètement implémenté, testé et intégré** à l'architecture existante de AZAKA CHANS.
 
 ---
 
@@ -346,7 +346,7 @@ COMMIT;
 - **Documentation technique** : `JACKPOT_DOCUMENTATION.md`
 - **Documentation générale** : `DOCUMENTATION.md`
 - **Tests** : Page "Tests Automatisés" dans l'interface
-- **Support** : support@chansayiti.ht
+- **Support** : support@azakachans.ht
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * LEDGER SERVICE - ChansAyiti
+ * LEDGER SERVICE - AZAKA CHANS
  * 
  * Service de registre comptable immuable et de réconciliation.
  * Responsabilités :

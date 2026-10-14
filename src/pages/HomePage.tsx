@@ -12,7 +12,7 @@ export function HomePage() {
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #F2D675 100%)' }}>
                 <Sparkles className="w-6 h-6" style={{ color: '#07162E' }} />
               </div>
-              <span className="text-xl font-bold" style={{ color: '#F5F0E6' }}>ChansAyiti</span>
+              <span className="text-xl font-bold" style={{ color: '#F5F0E6' }}>AZAKA CHANS</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Fonctionnalités</a>
@@ -93,7 +93,7 @@ export function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4" style={{ color: '#F5F0E6' }}>
-              Pourquoi choisir ChansAyiti ?
+              Pourquoi choisir AZAKA CHANS ?
             </h2>
             <p className="text-lg" style={{ color: '#AAB7C9' }}>
               Une plateforme conçue pour la sécurité et la transparence
@@ -174,10 +174,10 @@ export function HomePage() {
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #F2D675 100%)' }}>
                   <Sparkles className="w-6 h-6" style={{ color: '#07162E' }} />
                 </div>
-                <span className="text-xl font-bold" style={{ color: '#F5F0E6' }}>ChansAyiti</span>
+                <span className="text-xl font-bold" style={{ color: '#F5F0E6' }}>AZAKA CHANS</span>
               </div>
               <p className="text-sm" style={{ color: '#AAB7C9' }}>
-                La plateforme de loterie sécurisée d'Haïti.
+                Rasin nou. Chans nou.
               </p>
             </div>
             <div>
@@ -207,7 +207,7 @@ export function HomePage() {
           </div>
           <div className="mt-8 pt-8 text-center" style={{ borderTop: '1px solid rgba(212, 175, 55, 0.2)' }}>
             <p className="text-sm" style={{ color: '#AAB7C9' }}>
-              © 2024 ChansAyiti. Tous droits réservés. Jouer comporte des risques : endettement, dépendance... Appelez le 09 26 60 88 41 (appel non surtaxé).
+              © 2024 AZAKA CHANS. Tous droits réservés. Jouer comporte des risques : endettement, dépendance... Appelez le 09 26 60 88 41 (appel non surtaxé).
             </p>
           </div>
         </div>

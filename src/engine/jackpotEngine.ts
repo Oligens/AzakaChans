@@ -1,5 +1,5 @@
 /**
- * JACKPOT ENGINE - ChansAyiti
+ * JACKPOT ENGINE - AZAKA CHANS
  * 
  * Moteur de jackpot itinérant avec machine à états stricte.
  * 

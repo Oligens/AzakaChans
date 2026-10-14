@@ -1,5 +1,5 @@
 /**
- * PAYMENT SERVICE - ChansAyiti
+ * PAYMENT SERVICE - AZAKA CHANS
  * 
  * Service de gestion des paiements et intégrations prestataires.
  * Responsabilités :

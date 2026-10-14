@@ -1,5 +1,5 @@
 /**
- * ChansAyiti Engine - Point d'entrée
+ * AZAKA CHANS Engine - Point d'entrée
  * 
  * Exporte tous les composants du moteur de loterie :
  * - Moteur financier (calculs, couverture, validation)

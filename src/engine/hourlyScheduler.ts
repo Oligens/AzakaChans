@@ -1,5 +1,5 @@
 /**
- * SERVICE DE CYCLE HORAIRE - ChansAyiti
+ * SERVICE DE CYCLE HORAIRE - AZAKA CHANS
  * 
  * Mécanisme de renouvellement automatique des séries à intervalles d'une heure.
  * L'exécution est idempotente : deux exécutions simultanées ne créent jamais

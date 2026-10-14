@@ -12,7 +12,7 @@ export function ArchitecturePage() {
 
         <h1 className="text-4xl font-bold mb-4" style={{ color: '#F5F0E6' }}>Architecture Technique</h1>
         <p className="text-lg mb-12" style={{ color: '#AAB7C9' }}>
-          Vue d'ensemble des composants du système ChansAyiti
+          Vue d'ensemble des composants du système AZAKA CHANS
         </p>
 
         {/* Components Grid */}

@@ -47,7 +47,7 @@ export function ShopPage() {
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #F2D675 100%)' }}>
                 <Sparkles className="w-6 h-6" style={{ color: '#07162E' }} />
               </div>
-              <span className="text-xl font-bold" style={{ color: '#F5F0E6' }}>ChansAyiti</span>
+              <span className="text-xl font-bold" style={{ color: '#F5F0E6' }}>AZAKA CHANS</span>
             </Link>
             <div className="flex items-center gap-4">
               <Link to="/portefeuille" className="btn-secondary text-sm">

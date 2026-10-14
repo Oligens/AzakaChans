@@ -1,5 +1,5 @@
 /**
- * AUTH SERVICE - ChansAyiti
+ * AUTH SERVICE - AZAKA CHANS
  * 
  * Service d'authentification sécurisé pour les administrateurs.
  * 
@@ -73,7 +73,7 @@ const SECURITY_CONFIG = {
 const ADMIN_USERS_DB = [
   {
     id: 'admin-001',
-    email: 'admin@chansayiti.ht',
+    email: 'admin@azakachans.ht',
     // En production : hash bcrypt du mot de passe
     passwordHash: 'demo-password-123!', // NE JAMAIS UTILISER EN PRODUCTION
     name: 'Marie-Claire Duval',
@@ -84,7 +84,7 @@ const ADMIN_USERS_DB = [
   },
   {
     id: 'admin-002',
-    email: 'finance@chansayiti.ht',
+    email: 'finance@azakachans.ht',
     passwordHash: 'finance-secure-456!',
     name: 'Jean-Pierre Sylvain',
     role: 'FINANCE' as const,
@@ -325,7 +325,7 @@ class AuthManager {
   private persistSession(session: Session): void {
     // En production : cookie HttpOnly, Secure, SameSite
     try {
-      sessionStorage.setItem('chansayiti_session', JSON.stringify(session));
+      sessionStorage.setItem('azakachans_session', JSON.stringify(session));
     } catch (e) {
       // Ignorer les erreurs de stockage
     }
@@ -334,7 +334,7 @@ class AuthManager {
   // Charger la session persistée
   loadPersistedSession(): boolean {
     try {
-      const stored = sessionStorage.getItem('chansayiti_session');
+      const stored = sessionStorage.getItem('azakachans_session');
       if (!stored) return false;
 
       const session: Session = JSON.parse(stored);
@@ -378,7 +378,7 @@ class AuthManager {
   // Effacer la session
   private clearSession(): void {
     try {
-      sessionStorage.removeItem('chansayiti_session');
+      sessionStorage.removeItem('azakachans_session');
     } catch (e) {
       // Ignorer
     }

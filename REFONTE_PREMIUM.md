@@ -1,4 +1,4 @@
-# Refonte Premium ChansAyiti - Documentation Complète
+# Refonte Premium AZAKA CHANS - Documentation Complète
 
 ## 🎨 Direction Artistique
 
@@ -34,11 +34,11 @@
 
 #### Identifiants de Test
 ```
-Email: admin@chansayiti.ht
+Email: admin@azakachans.ht
 Mot de passe: demo-password-123!
 Rôle: SUPER_ADMIN
 
-Email: finance@chansayiti.ht
+Email: finance@azakachans.ht
 Mot de passe: finance-secure-456!
 Rôle: FINANCE
 ```
@@ -297,7 +297,7 @@ README.md                        # README existant
 
 ```env
 # Base de données
-DATABASE_URL=postgresql://user:pass@host:5432/chansayiti
+DATABASE_URL=postgresql://user:pass@host:5432/azakachans
 
 # Authentification
 JWT_SECRET=<generated-256-bits>
@@ -310,7 +310,7 @@ MAX_LOGIN_ATTEMPTS=5
 LOCKOUT_DURATION_MINUTES=15
 
 # Sécurité
-CORS_ORIGINS=https://chansayiti.ht
+CORS_ORIGINS=https://azakachans.ht
 RATE_LIMIT_REQUESTS=100
 RATE_LIMIT_WINDOW=900
 
@@ -339,7 +339,7 @@ NATCASH_API_SECRET=<from-vault>
    - ✅ Tenter d'accéder à `/gestion-privee` → Accès refusé
 
 4. **Accès avec rôle ADMIN valide**
-   - ✅ Connexion avec admin@chansayiti.ht
+   - ✅ Connexion avec admin@azakachans.ht
    - ✅ Accès à `/gestion-privee` → Autorisé
    - ✅ Accès à `/gestion-privee/architecture` → Autorisé (SUPER_ADMIN)
 

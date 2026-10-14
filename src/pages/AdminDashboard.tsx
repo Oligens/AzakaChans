@@ -36,7 +36,7 @@ export function AdminDashboard() {
             </div>
             <div>
               <h1 className="font-bold" style={{ color: '#F5F0E6' }}>Admin</h1>
-              <p className="text-xs" style={{ color: '#AAB7C9' }}>ChansAyiti</p>
+              <p className="text-xs" style={{ color: '#AAB7C9' }}>AZAKA CHANS</p>
             </div>
           </div>
         </div>

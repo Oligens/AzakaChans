@@ -1,5 +1,5 @@
 /**
- * PLATFORM STATE SERVICE - ChansAyiti
+ * PLATFORM STATE SERVICE - AZAKA CHANS
  * 
  * Service de gestion des états opérationnels de la plateforme.
  * Responsabilités :

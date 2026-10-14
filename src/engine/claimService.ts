@@ -1,5 +1,5 @@
 /**
- * CLAIM SERVICE - ChansAyiti
+ * CLAIM SERVICE - AZAKA CHANS
  * 
  * Service de gestion des réclamations et tickets contestés.
  * Responsabilités :

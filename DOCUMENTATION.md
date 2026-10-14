@@ -1,4 +1,4 @@
-# ChansAyiti - Documentation d'Exploitation
+# AZAKA CHANS - Documentation d'Exploitation
 
 ## Architecture Technique
 
@@ -173,7 +173,7 @@ couverture_gains = fonds_affectés_aux_gains / engagements_restants
 
 ```env
 # Base de données
-DATABASE_URL=postgresql://user:pass@host:5432/chansayiti
+DATABASE_URL=postgresql://user:pass@host:5432/azakachans
 DATABASE_POOL_SIZE=20
 
 # Sécurité
@@ -298,10 +298,10 @@ npm run test:engine
 
 ### Contact et Support
 
-- **Direction Technique** : architecture@chansayiti.ht
-- **Direction Financière** : cfo@chansayiti.ht
-- **Support Utilisateurs** : support@chansayiti.ht
-- **Conformité Légale** : legal@chansayiti.ht
+- **Direction Technique** : architecture@azakachans.ht
+- **Direction Financière** : cfo@azakachans.ht
+- **Support Utilisateurs** : support@azakachans.ht
+- **Conformité Légale** : legal@azakachans.ht
 
 ---
 

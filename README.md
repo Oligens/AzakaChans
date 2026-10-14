@@ -1,8 +1,10 @@
-# ChansAyiti - Plateforme de Loterie Numérique Sécurisée
+# AZAKA CHANS - Rasin nou. Chans nou.
 
 ## 🎯 Vue d'Ensemble
 
-ChansAyiti est une plateforme de loterie numérique et physique conçue pour le marché haïtien, avec un moteur économique robuste, sécurisé et auditable. Le système gère la vente de tickets, la révélation des gains, les paiements mobiles (MonCash/NatCash) et garantit la solvabilité financière grâce à des contrôles stricts.
+**AZAKA CHANS** est la loterie haïtienne nouvelle génération. Une plateforme numérique et physique conçue pour le marché haïtien, avec un moteur économique robuste, sécurisé et auditable. Le système gère la vente de tickets, la révélation des gains, les paiements mobiles (MonCash/NatCash) et garantit la solvabilité financière grâce à des contrôles stricts.
+
+**Notre mission** : Allier héritage culturel haïtien et innovation technologique pour offrir une expérience de loterie transparente, sécurisée et responsable.
 
 ## ✨ Fonctionnalités Principales
 
@@ -114,7 +116,7 @@ couverture = fonds_affectés / engagements_restants
 ```bash
 # Cloner le dépôt
 git clone <repository-url>
-cd chansayiti
+cd azaka-chans
 
 # Installer les dépendances
 npm install
@@ -141,7 +143,7 @@ npm run build
 ## 📁 Structure du Projet
 
 ```
-chansayiti/
+azaka-chans/
 ├── src/
 │   ├── App.tsx                 # Interface principale
 │   ├── types.ts                # Types de base
@@ -251,13 +253,13 @@ Ce projet est conçu pour être auditable, vérifiable et financièrement contr�
 
 ## 📄 Licence
 
-Propriétaire - ChansAyiti
+Propriétaire - AZAKA CHANS
 
 ## 📞 Contact
 
-- **Direction Technique** : architecture@chansayiti.ht
-- **Direction Financière** : cfo@chansayiti.ht
-- **Support** : support@chansayiti.ht
+- **Direction Technique** : architecture@azakachans.ht
+- **Direction Financière** : cfo@azakachans.ht
+- **Support** : support@azakachans.ht
 
 ---
 

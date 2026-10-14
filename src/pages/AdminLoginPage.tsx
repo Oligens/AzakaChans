@@ -43,7 +43,7 @@ export function AdminLoginPage() {
             Espace Administration
           </h1>
           <p className="text-sm mt-2" style={{ color: '#AAB7C9' }}>
-            ChansAyiti - Accès sécurisé
+            AZAKA CHANS - Accès sécurisé
           </p>
         </div>
 
@@ -62,7 +62,7 @@ export function AdminLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-premium pl-10"
-                  placeholder="admin@chansayiti.ht"
+                  placeholder="admin@azakachans.ht"
                   required
                   autoComplete="email"
                   disabled={isLoading}

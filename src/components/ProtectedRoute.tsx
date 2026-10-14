@@ -1,5 +1,5 @@
 /**
- * PROTECTED ROUTE - ChansAyiti
+ * PROTECTED ROUTE - AZAKA CHANS
  * 
  * Composant de protection des routes privilégiées.
  * Vérifie l'authentification et les permissions avant d'afficher le contenu.

@@ -409,7 +409,7 @@ Menu Admin → "Jackpot Itinérant"
 
 - **Documentation technique** : Voir DOCUMENTATION.md
 - **Tests** : Page "Tests Automatisés" dans l'interface admin
-- **Support** : support@chansayiti.ht
+- **Support** : support@azakachans.ht
 
 ---
 

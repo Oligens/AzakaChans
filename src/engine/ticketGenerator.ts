@@ -1,5 +1,5 @@
 /**
- * GÉNÉRATEUR DE TICKETS SÉCURISÉ - ChansAyiti
+ * GÉNÉRATEUR DE TICKETS SÉCURISÉ - AZAKA CHANS
  * 
  * Génère les tickets avec des résultats pré-déterminés côté serveur.
  * Utilise un générateur cryptographiquement sûr.

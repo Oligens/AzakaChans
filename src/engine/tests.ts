@@ -1,5 +1,5 @@
 /**
- * TESTS AUTOMATISÉS - ChansAyiti
+ * TESTS AUTOMATISÉS - AZAKA CHANS
  * 
  * Couverture des cas obligatoires :
  * - Quotas de tickets gagnants et perdants
@@ -1257,7 +1257,7 @@ export function getTestResults(): { total: number; passed: number; failed: numbe
 export function runAllTests(): void {
   const summary = getTestResults();
   console.log(`\n${'='.repeat(60)}`);
-  console.log(`RÉSULTATS DES TESTS - ChansAyiti`);
+  console.log(`RÉSULTATS DES TESTS - AZAKA CHANS`);
   console.log(`${'='.repeat(60)}`);
   console.log(`Total: ${summary.total} | Réussis: ${summary.passed} | Échoués: ${summary.failed}`);
   console.log(`${'='.repeat(60)}\n`);

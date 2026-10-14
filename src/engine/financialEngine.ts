@@ -1,5 +1,5 @@
 /**
- * MOTEUR FINANCIER - ChansAyiti
+ * MOTEUR FINANCIER - AZAKA CHANS
  * 
  * Service centralisé qui calcule et vérifie la solvabilité du système.
  * Aucune nouvelle série ne peut être publiée sans budget vérifié.
