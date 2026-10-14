@@ -166,20 +166,82 @@ export function ResponsibleGamingPage() {
           </p>
         </section>
 
-        {/* Note finale */}
-        <div className="mt-12 p-6 rounded-xl" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#EF4444' }} />
-            <div>
-              <h3 className="text-lg font-bold mb-2" style={{ color: '#F5F0E6' }}>
-                Jouer comporte des risques
-              </h3>
-              <p className="text-sm" style={{ color: '#AAB7C9' }}>
-                Endetement, dépendance, isolement... Si vous ou un proche avez besoin d'aide, 
-                appelez le <strong style={{ color: '#D4AF37' }}>09 26 60 88 41</strong> (appel non surtaxé) 
-                ou contactez-nous via la page Contact.
-              </p>
-            </div>
+        {/* Pourquoi jouer comporte des risques */}
+        <div className="mt-12 p-8 rounded-xl" style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)' }}>
+          <div className="flex items-center gap-3 mb-5">
+            <AlertTriangle className="w-6 h-6 flex-shrink-0" style={{ color: '#EF4444' }} />
+            <h2 className="text-2xl font-bold" style={{ color: '#F5F0E6' }}>
+              Pourquoi jouer comporte des risques
+            </h2>
+          </div>
+
+          <div className="space-y-4 text-sm leading-relaxed" style={{ color: '#AAB7C9' }}>
+            <p>
+              Participer à un jeu de loterie peut être une expérience agréable lorsqu'elle est vécue avec 
+              mesure, mais il est essentiel de garder à l'esprit qu'elle comporte des risques réels, tant 
+              sur le plan financier que personnel.
+            </p>
+
+            <p>
+              <strong style={{ color: '#F5F0E6' }}>Gagner n'est jamais garanti.</strong> Les jeux de hasard 
+              reposent sur des mécanismes aléatoires dont les résultats ne peuvent être prédits avec certitude. 
+              Aucune méthode, aucune stratégie, aucune intuition ne permet d'augmenter ses chances de manière 
+              fiable. Chaque ticket est indépendant, et le fait d'avoir perdu plusieurs fois de suite ne rend 
+              pas un gain futur plus probable. Cette idée, souvent appelée « illusion du joueur », peut 
+              conduire à des décisions impulsives et à des pertes plus importantes que prévu.
+            </p>
+
+            <p>
+              <strong style={{ color: '#F5F0E6' }}>Les pertes peuvent s'accumuler silencieusement.</strong> 
+              Il est facile de sous-estimer la somme totale dépensée lorsque les montants unitaires semblent 
+              modestes. Au fil des semaines ou des mois, ces petites dépenses régulières peuvent représenter 
+              une part significative du budget familial. Vouloir récupérer rapidement une perte en augmentant 
+              ses mises est l'un des mécanismes les plus dangereux du jeu : il transforme souvent une perte 
+              ponctuelle en difficulté financière durable.
+            </p>
+
+            <p>
+              <strong style={{ color: '#F5F0E6' }}>Jouer avec de l'argent nécessaire ailleurs peut avoir 
+              des conséquences graves.</strong> Utiliser une somme destinée au loyer, à l'alimentation, aux 
+              études, aux soins ou au remboursement d'une dette expose à des situations de stress intense et 
+              peut créer un cercle vicieux difficile à briser. Le jeu ne devrait jamais être considéré comme 
+              une solution financière, même temporaire.
+            </p>
+
+            <p>
+              <strong style={{ color: '#F5F0E6' }}>Le jeu peut progressivement prendre plus de place que 
+              prévu.</strong> Ce qui commence comme un divertissement occasionnel peut, pour certaines 
+              personnes, devenir une habitude envahissante. Les émotions, le stress, l'ennui ou les 
+              difficultés personnelles peuvent pousser à jouer davantage, non plus pour le plaisir, mais 
+              pour chercher un soulagement ou une évasion. Lorsque le jeu commence à influencer l'humeur, 
+              les relations, le sommeil ou la concentration, c'est souvent le signe qu'il occupe déjà trop 
+              d'espace dans la vie quotidienne.
+            </p>
+
+            <p>
+              <strong style={{ color: '#F5F0E6' }}>Chaque personne est différente face au jeu.</strong> 
+              Certaines parviennent à conserver un rapport équilibré, tandis que d'autres développent, 
+              parfois sans s'en rendre compte, une relation problématique. Il n'y a pas de profil type : 
+              cela peut toucher toute personne, quel que soit son âge, son niveau d'études ou sa situation 
+              financière. Reconnaître tôt les signes d'un comportement à risque est la meilleure façon de 
+              préserver son bien-être.
+            </p>
+
+            <p>
+              Le jeu doit rester un divertissement, et non un moyen de gagner de l'argent ou de résoudre 
+              des difficultés. Lorsque cette frontière devient floue, il est temps de s'interroger et, si 
+              nécessaire, de faire une pause.
+            </p>
+          </div>
+
+          {/* Conclusion / transition vers le jeu responsable */}
+          <div className="mt-6 pt-6" style={{ borderTop: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <h3 className="text-lg font-semibold mb-3" style={{ color: '#F5F0E6' }}>
+              La meilleure manière de jouer
+            </h3>
+            <p className="text-sm leading-relaxed" style={{ color: '#AAB7C9' }}>
+              La façon la plus saine de participer à un jeu de loterie consiste à <strong style={{ color: '#F5F0E6' }}>définir à l'avance un budget</strong> que l'on est prêt à perdre, à <strong style={{ color: '#F5F0E6' }}>ne jouer qu'avec une somme que l'on peut se permettre de perdre</strong>, à <strong style={{ color: '#F5F0E6' }}>respecter ses limites</strong> sans chercher à récupérer immédiatement ses pertes, et à <strong style={{ color: '#F5F0E6' }}>faire une pause</strong> dès que le jeu devient source de stress, de préoccupation ou de frustration. Si vous sentez que vous perdez le contrôle, n'hésitez pas à utiliser nos outils d'auto-exclusion ou à nous contacter via la page <Link to="/contact" className="underline hover:opacity-80" style={{ color: '#D4AF37' }}>Contact</Link>.
+            </p>
           </div>
         </div>
       </div>

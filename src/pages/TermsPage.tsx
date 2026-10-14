@@ -149,16 +149,6 @@ export function TermsPage() {
             Contact ou à l'adresse cleefolig@gmail.com.
           </p>
         </section>
-
-        {/* Note finale */}
-        <div className="mt-12 p-6 rounded-xl" style={{ background: 'rgba(212, 175, 55, 0.1)', border: '1px solid rgba(212, 175, 55, 0.3)' }}>
-          <p className="text-sm" style={{ color: '#AAB7C9' }}>
-            <strong style={{ color: '#D4AF37' }}>Note importante :</strong> Ces conditions d'utilisation sont 
-            fournies à titre informatif. Pour une plateforme de loterie réelle, il est essentiel de consulter 
-            un juriste spécialisé pour s'assurer de la conformité avec les réglementations locales en matière 
-            de jeux d'argent en Haïti.
-          </p>
-        </div>
       </div>
     </InformationPage>
   );

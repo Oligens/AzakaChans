@@ -165,7 +165,7 @@ export function HomePage() {
           </div>
           <div className="mt-8 pt-8 text-center" style={{ borderTop: '1px solid rgba(212, 175, 55, 0.2)' }}>
             <p className="text-sm" style={{ color: '#AAB7C9' }}>
-              © 2024 AZAKA CHANS. Tous droits réservés. Jouer comporte des risques : endettement, dépendance... Appelez le 09 26 60 88 41 (appel non surtaxé).
+              © 2024 AZAKA CHANS. Tous droits réservés. Jouer comporte des risques : endettement, dépendance, isolement.
             </p>
           </div>
         </div>
