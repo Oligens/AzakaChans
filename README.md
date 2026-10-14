@@ -58,7 +58,7 @@ npm run dev
    - Tester l'inscription
    - Vérifier la connexion à la base de données
 
-📖 **Guide complet:** Voir [`docs/DEPLOYMENT_VERCEL_NEON.md`](./docs/DEPLOYMENT_VERCEL_NEON.md)
+📖 **Guide complet:** Voir [`docs/DEPLOYMENT_VERCEL_NEON.md`](./docs/DEPLOYMENT_VERCEL_NEON.md) et [`docs/NEON_VERCEL_SETUP.md`](./docs/NEON_VERCEL_SETUP.md)
 
 ### Application Android (Optionnel)
 
