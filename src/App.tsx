@@ -20,6 +20,7 @@ type Page =
   | 'user-dashboard' | 'user-shop' | 'user-tickets' | 'user-wallet' | 'user-scan'
   | 'admin-dashboard' | 'admin-series' | 'admin-financial' | 'admin-withdrawals' 
   | 'admin-reports' | 'admin-audit' | 'admin-cycles' | 'admin-tests'
+  | 'admin-platform-state' | 'admin-claims' | 'admin-ledger'
   | 'architecture';
 
 function App() {
@@ -37,9 +38,12 @@ function App() {
 
   const adminMenuItems = [
     { id: 'admin-dashboard' as Page, label: 'Vue d\'ensemble', icon: LayoutDashboard },
+    { id: 'admin-platform-state' as Page, label: 'État Plateforme', icon: Activity },
     { id: 'admin-series' as Page, label: 'Séries & Tickets', icon: Ticket },
     { id: 'admin-financial' as Page, label: 'Moteur Financier', icon: DollarSign },
+    { id: 'admin-ledger' as Page, label: 'Registre Comptable', icon: Database },
     { id: 'admin-withdrawals' as Page, label: 'Retraits', icon: ArrowDownToLine },
+    { id: 'admin-claims' as Page, label: 'Réclamations', icon: FileText },
     { id: 'admin-cycles' as Page, label: 'Cycles Horaires', icon: RefreshCw },
     { id: 'admin-tests' as Page, label: 'Tests Automatisés', icon: Zap },
     { id: 'admin-reports' as Page, label: 'Rapports', icon: PieIcon },
@@ -153,6 +157,9 @@ function App() {
           {currentPage === 'admin-withdrawals' && <AdminWithdrawals />}
           {currentPage === 'admin-cycles' && <AdminCycles />}
           {currentPage === 'admin-tests' && <AdminTests />}
+          {currentPage === 'admin-platform-state' && <AdminPlatformState />}
+          {currentPage === 'admin-claims' && <AdminClaims />}
+          {currentPage === 'admin-ledger' && <AdminLedger />}
           {currentPage === 'admin-reports' && <AdminReports />}
           {currentPage === 'admin-audit' && <AdminAudit />}
           {currentPage === 'architecture' && <ArchitecturePage />}
@@ -1245,6 +1252,426 @@ function AdminTests() {
           <p className="text-blue-500 text-sm mt-1">Les tests valident le moteur financier, le générateur de tickets et le service de cycle horaire</p>
         </div>
       )}
+    </div>
+  );
+}
+
+// ============================================================
+// PAGE: ÉTAT DE LA PLATEFORME
+// ============================================================
+
+function AdminPlatformState() {
+  const [currentState, setCurrentState] = useState<'NORMAL' | 'WARNING' | 'SALES_RESTRICTED' | 'SALES_SUSPENDED' | 'RECONCILIATION_REQUIRED'>('WARNING');
+  const [showTransitionModal, setShowTransitionModal] = useState(false);
+
+  const stateConfig = {
+    NORMAL: { color: 'green', icon: CheckCircle2, label: 'Normal', desc: 'Toutes les opérations sont actives' },
+    WARNING: { color: 'yellow', icon: AlertTriangle, label: 'Attention', desc: 'Couverture sous le seuil d\'alerte' },
+    SALES_RESTRICTED: { color: 'orange', icon: Ban, label: 'Ventes restreintes', desc: 'Seules les petites catégories sont disponibles' },
+    SALES_SUSPENDED: { color: 'red', icon: XCircle, label: 'Ventes suspendues', desc: 'Aucune nouvelle vente autorisée' },
+    RECONCILIATION_REQUIRED: { color: 'purple', icon: AlertCircle, label: 'Réconciliation requise', desc: 'Investigation comptable en cours' },
+  };
+
+  const config = stateConfig[currentState];
+  const Icon = config.icon;
+
+  const restrictions = {
+    NORMAL: { sell: true, create: true, withdraw: true, reveal: true, categories: 'Toutes' },
+    WARNING: { sell: true, create: true, withdraw: true, reveal: true, categories: 'Toutes' },
+    SALES_RESTRICTED: { sell: true, create: false, withdraw: true, reveal: true, categories: '100, 250 HTG' },
+    SALES_SUSPENDED: { sell: false, create: false, withdraw: false, reveal: true, categories: 'Aucune' },
+    RECONCILIATION_REQUIRED: { sell: false, create: false, withdraw: false, reveal: true, categories: 'Aucune' },
+  };
+
+  const currentRestrictions = restrictions[currentState];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">État de la Plateforme</h1>
+          <p className="text-gray-500">Contrôle opérationnel et transitions d'état</p>
+        </div>
+        <button onClick={() => setShowTransitionModal(true)} className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-blue-700 transition">
+          Changer l'état
+        </button>
+      </div>
+
+      {/* Current State */}
+      <div className={`rounded-2xl p-6 border-2 bg-${config.color}-50 border-${config.color}-200`}>
+        <div className="flex items-center gap-4">
+          <div className={`w-16 h-16 rounded-2xl bg-${config.color}-100 flex items-center justify-center`}>
+            <Icon className={`w-8 h-8 text-${config.color}-600`} />
+          </div>
+          <div>
+            <p className={`text-sm text-${config.color}-600 font-medium`}>État actuel</p>
+            <h2 className={`text-2xl font-bold text-${config.color}-800`}>{config.label}</h2>
+            <p className={`text-sm text-${config.color}-600`}>{config.desc}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Restrictions */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Restrictions actives</h3>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <RestrictionCard label="Vente tickets" allowed={currentRestrictions.sell} />
+          <RestrictionCard label="Création séries" allowed={currentRestrictions.create} />
+          <RestrictionCard label="Retraits" allowed={currentRestrictions.withdraw} />
+          <RestrictionCard label="Révélation" allowed={currentRestrictions.reveal} />
+          <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <p className="text-xs text-gray-500 mb-1">Catégories</p>
+            <p className="font-semibold text-sm text-gray-900">{currentRestrictions.categories}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* State Machine */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Machine à états</h3>
+        <div className="flex flex-wrap gap-3">
+          {Object.entries(stateConfig).map(([state, cfg]) => {
+            const StateIcon = cfg.icon;
+            const isActive = state === currentState;
+            return (
+              <button
+                key={state}
+                onClick={() => setCurrentState(state as any)}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 transition ${isActive ? `border-${cfg.color}-500 bg-${cfg.color}-50` : 'border-gray-200 hover:bg-gray-50'}`}
+              >
+                <StateIcon className={`w-5 h-5 ${isActive ? `text-${cfg.color}-600` : 'text-gray-400'}`} />
+                <span className={`text-sm font-medium ${isActive ? `text-${cfg.color}-800` : 'text-gray-600'}`}>{cfg.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Transition History */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Historique des transitions</h3>
+        <div className="space-y-3">
+          {[
+            { from: 'NORMAL', to: 'WARNING', reason: 'Couverture < 150%', time: '2024-04-08 08:00', by: 'Système' },
+            { from: 'WARNING', to: 'SALES_RESTRICTED', reason: 'Couverture < 120%', time: '2024-04-08 12:00', by: 'Système' },
+            { from: 'SALES_RESTRICTED', to: 'WARNING', reason: 'Réserve renflouée', time: '2024-04-09 09:00', by: 'CFO' },
+          ].map((t, i) => (
+            <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50">
+              <div className="flex items-center gap-2 text-xs">
+                <span className="px-2 py-1 bg-gray-200 rounded font-mono">{t.from}</span>
+                <span className="text-gray-400">→</span>
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded font-mono">{t.to}</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-gray-700">{t.reason}</p>
+                <p className="text-xs text-gray-400">{t.time} • Par: {t.by}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Transition Modal */}
+      {showTransitionModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowTransitionModal(false)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-4">Changer l'état de la plateforme</h3>
+            <div className="space-y-3">
+              {Object.entries(stateConfig).map(([state, cfg]) => {
+                const StateIcon = cfg.icon;
+                return (
+                  <button
+                    key={state}
+                    onClick={() => { setCurrentState(state as any); setShowTransitionModal(false); }}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 transition hover:bg-gray-50 ${currentState === state ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                  >
+                    <StateIcon className={`w-5 h-5 text-${cfg.color}-600`} />
+                    <div className="text-left">
+                      <p className="font-medium text-sm">{cfg.label}</p>
+                      <p className="text-xs text-gray-500">{cfg.desc}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <button onClick={() => setShowTransitionModal(false)} className="w-full mt-4 py-2.5 bg-gray-100 rounded-xl text-sm font-medium hover:bg-gray-200 transition">
+              Annuler
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RestrictionCard({ label, allowed }: { label: string; allowed: boolean }) {
+  return (
+    <div className={`rounded-xl p-3 text-center ${allowed ? 'bg-green-50' : 'bg-red-50'}`}>
+      <p className="text-xs text-gray-500 mb-1">{label}</p>
+      {allowed ? (
+        <CheckCircle2 className="w-5 h-5 text-green-600 mx-auto" />
+      ) : (
+        <XCircle className="w-5 h-5 text-red-600 mx-auto" />
+      )}
+      <p className={`text-xs font-medium mt-1 ${allowed ? 'text-green-600' : 'text-red-600'}`}>
+        {allowed ? 'Autorisé' : 'Bloqué'}
+      </p>
+    </div>
+  );
+}
+
+// ============================================================
+// PAGE: RÉCLAMATIONS
+// ============================================================
+
+function AdminClaims() {
+  const [filter, setFilter] = useState<string>('ALL');
+
+  const mockClaims = [
+    { id: 'CLM-000001', userId: 'u1', userName: 'Jean Pierre', type: 'TICKET_NOT_REVEALED', status: 'SUBMITTED', priority: 'MEDIUM', ticketPublicId: 'CHN-2024-00001', description: 'QR code illisible, impossible de révéler le ticket', submittedAt: '2024-04-10T09:00:00Z' },
+    { id: 'CLM-000002', userId: 'u2', userName: 'Marie Joseph', type: 'WITHDRAWAL_NOT_PROCESSED', status: 'INVESTIGATING', priority: 'HIGH', ticketPublicId: null, description: 'Retrait MonCash de 1000 HTG demandé il y a 3 jours', submittedAt: '2024-04-07T14:00:00Z' },
+    { id: 'CLM-000003', userId: 'u4', userName: 'Claudette François', type: 'WRONG_PRIZE_AMOUNT', status: 'RESOLVED', priority: 'HIGH', ticketPublicId: 'CHN-2024-00007', description: 'Le gain affiché ne correspond pas au montant crédité', submittedAt: '2024-04-06T11:00:00Z' },
+    { id: 'CLM-000004', userId: 'u1', userName: 'Jean Pierre', type: 'PAYMENT_NOT_RECEIVED', status: 'REJECTED', priority: 'LOW', ticketPublicId: null, description: 'Paiement MonCash effectué mais ticket non crédité', submittedAt: '2024-04-05T16:00:00Z' },
+  ];
+
+  const filtered = filter === 'ALL' ? mockClaims : mockClaims.filter(c => c.status === filter);
+
+  const statusColors: Record<string, string> = {
+    SUBMITTED: 'bg-yellow-100 text-yellow-700',
+    UNDER_REVIEW: 'bg-blue-100 text-blue-700',
+    INVESTIGATING: 'bg-purple-100 text-purple-700',
+    RESOLVED: 'bg-green-100 text-green-700',
+    REJECTED: 'bg-red-100 text-red-700',
+    REFUNDED: 'bg-green-100 text-green-700',
+  };
+
+  const priorityColors: Record<string, string> = {
+    LOW: 'bg-gray-100 text-gray-600',
+    MEDIUM: 'bg-blue-100 text-blue-600',
+    HIGH: 'bg-orange-100 text-orange-600',
+    CRITICAL: 'bg-red-100 text-red-600',
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Réclamations</h1>
+          <p className="text-gray-500">Gestion des tickets contestés et réclamations utilisateurs</p>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-center">
+          <p className="text-xs text-yellow-700">Soumises</p>
+          <p className="text-xl font-bold text-yellow-800">{mockClaims.filter(c => c.status === 'SUBMITTED').length}</p>
+        </div>
+        <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 text-center">
+          <p className="text-xs text-purple-700">En investigation</p>
+          <p className="text-xl font-bold text-purple-800">{mockClaims.filter(c => c.status === 'INVESTIGATING').length}</p>
+        </div>
+        <div className="bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+          <p className="text-xs text-green-700">Résolues</p>
+          <p className="text-xl font-bold text-green-800">{mockClaims.filter(c => c.status === 'RESOLVED').length}</p>
+        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+          <p className="text-xs text-red-700">Rejetées</p>
+          <p className="text-xl font-bold text-red-800">{mockClaims.filter(c => c.status === 'REJECTED').length}</p>
+        </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
+          <p className="text-xs text-blue-700">Taux remboursement</p>
+          <p className="text-xl font-bold text-blue-800">25%</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-2 flex-wrap">
+        {['ALL', 'SUBMITTED', 'INVESTIGATING', 'RESOLVED', 'REJECTED'].map(status => (
+          <button key={status} onClick={() => setFilter(status)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${filter === status ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>
+            {status === 'ALL' ? 'Toutes' : status}
+          </button>
+        ))}
+      </div>
+
+      {/* Claims List */}
+      <div className="space-y-3">
+        {filtered.map(claim => (
+          <div key={claim.id} className="bg-white rounded-2xl border border-gray-200 p-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-sm font-medium text-gray-900">{claim.id}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[claim.status]}`}>{claim.status}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${priorityColors[claim.priority]}`}>{claim.priority}</span>
+                </div>
+                <p className="text-sm text-gray-700">{claim.description}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {claim.userName} • {claim.type.replace(/_/g, ' ')}
+                  {claim.ticketPublicId && ` • Ticket: ${claim.ticketPublicId}`}
+                </p>
+                <p className="text-xs text-gray-400 mt-1">Soumise: {new Date(claim.submittedAt).toLocaleString('fr-FR')}</p>
+              </div>
+            </div>
+            {(claim.status === 'SUBMITTED' || claim.status === 'INVESTIGATING') && (
+              <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
+                <button className="flex-1 bg-blue-600 text-white py-2 rounded-xl font-medium text-sm hover:bg-blue-700 transition">
+                  Investiguer
+                </button>
+                <button className="flex-1 bg-green-600 text-white py-2 rounded-xl font-medium text-sm hover:bg-green-700 transition">
+                  Résoudre
+                </button>
+                <button className="flex-1 bg-red-600 text-white py-2 rounded-xl font-medium text-sm hover:bg-red-700 transition">
+                  Rejeter
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// PAGE: REGISTRE COMPTABLE
+// ============================================================
+
+function AdminLedger() {
+  const integrityCheck = {
+    isValid: true,
+    totalEntries: 2458,
+    totalAnomalies: 0,
+    lastReconciliation: '2024-04-10T11:00:00Z',
+  };
+
+  const recentEntries = mockTransactions.slice(-10).map((tx, i) => ({
+    id: `LE-${String(i + 1).padStart(6, '0')}`,
+    timestamp: tx.createdAt,
+    type: tx.type,
+    debitAccount: tx.debitAccount,
+    creditAccount: tx.creditAccount,
+    amount: tx.amount,
+    reference: tx.reference,
+    status: tx.status,
+  }));
+
+  const accounts = [
+    { name: 'house-cash', balance: 450000, credits: 800000, debits: 350000 },
+    { name: 'house-prize-reserve', balance: 255000, credits: 255000, debits: 0 },
+    { name: 'house-revenue', balance: 196750, credits: 218000, debits: 21250 },
+    { name: 'u1-wallet', balance: 2500, credits: 5500, debits: 3000 },
+    { name: 'u2-wallet', balance: 750, credits: 2750, debits: 2000 },
+    { name: 'u4-wallet', balance: 15000, credits: 15000, debits: 0 },
+    { name: 'pending-withdrawals', balance: 6500, credits: 6500, debits: 0 },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Registre Comptable</h1>
+          <p className="text-gray-500">Double écriture, réconciliation et intégrité</p>
+        </div>
+        <div className="flex gap-2">
+          <button className="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-blue-700 transition">
+            Réconcilier
+          </button>
+          <button className="bg-gray-100 text-gray-700 px-4 py-2.5 rounded-xl font-medium text-sm hover:bg-gray-200 transition">
+            Exporter
+          </button>
+        </div>
+      </div>
+
+      {/* Integrity Status */}
+      <div className={`rounded-2xl p-5 border-2 ${integrityCheck.isValid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+        <div className="flex items-center gap-3">
+          {integrityCheck.isValid ? <CheckCircle2 className="w-8 h-8 text-green-600" /> : <XCircle className="w-8 h-8 text-red-600" />}
+          <div>
+            <h2 className={`text-lg font-bold ${integrityCheck.isValid ? 'text-green-800' : 'text-red-800'}`}>
+              {integrityCheck.isValid ? 'Registre intègre' : 'Anomalies détectées'}
+            </h2>
+            <p className={`text-sm ${integrityCheck.isValid ? 'text-green-600' : 'text-red-600'}`}>
+              {integrityCheck.totalEntries} écritures • {integrityCheck.totalAnomalies} anomalie(s) • Dernière réconciliation: {new Date(integrityCheck.lastReconciliation).toLocaleString('fr-FR')}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Accounts */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Soldes des comptes</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left py-3 px-4 font-medium text-gray-500">Compte</th>
+                <th className="text-right py-3 px-4 font-medium text-gray-500">Solde</th>
+                <th className="text-right py-3 px-4 font-medium text-gray-500">Total Crédits</th>
+                <th className="text-right py-3 px-4 font-medium text-gray-500">Total Débits</th>
+                <th className="text-left py-3 px-4 font-medium text-gray-500">Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accounts.map(acc => (
+                <tr key={acc.name} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="py-3 px-4 font-mono text-xs">{acc.name}</td>
+                  <td className="py-3 px-4 text-right font-medium">{acc.balance.toLocaleString()} HTG</td>
+                  <td className="py-3 px-4 text-right text-green-600 text-xs">{acc.credits.toLocaleString()}</td>
+                  <td className="py-3 px-4 text-right text-red-600 text-xs">{acc.debits.toLocaleString()}</td>
+                  <td className="py-3 px-4">
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">Vérifié</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Recent Entries */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Dernières écritures</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left py-2 px-3 font-medium text-gray-500">ID</th>
+                <th className="text-left py-2 px-3 font-medium text-gray-500">Date</th>
+                <th className="text-left py-2 px-3 font-medium text-gray-500">Type</th>
+                <th className="text-left py-2 px-3 font-medium text-gray-500">Débit</th>
+                <th className="text-left py-2 px-3 font-medium text-gray-500">Crédit</th>
+                <th className="text-right py-2 px-3 font-medium text-gray-500">Montant</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recentEntries.map(entry => (
+                <tr key={entry.id} className="border-b border-gray-50 hover:bg-gray-50">
+                  <td className="py-2 px-3 font-mono">{entry.id}</td>
+                  <td className="py-2 px-3">{new Date(entry.timestamp).toLocaleString('fr-FR')}</td>
+                  <td className="py-2 px-3"><span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px]">{entry.type}</span></td>
+                  <td className="py-2 px-3 font-mono text-red-600">{entry.debitAccount}</td>
+                  <td className="py-2 px-3 font-mono text-green-600">{entry.creditAccount}</td>
+                  <td className="py-2 px-3 text-right font-medium">{entry.amount.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Double Entry Principle */}
+      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+        <h3 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+          <Database className="w-5 h-5 text-blue-600" />
+          Principe de double écriture
+        </h3>
+        <p className="text-sm text-blue-700">
+          Chaque transaction génère exactement deux écritures : un débit et un crédit de montant identique.
+          La somme de tous les débits doit toujours égaler la somme de tous les crédits.
+          Toute divergence déclenche automatiquement une alerte et bloque les opérations concernées.
+        </p>
+      </div>
     </div>
   );
 }

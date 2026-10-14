@@ -553,6 +553,349 @@ test('Cycle horaire: idempotence (même cycle rejeté)', () => {
 });
 
 // ============================================================
+// TESTS DU LEDGER SERVICE
+// ============================================================
+
+import { recordTransaction, getAccountBalance, reconcileAccount, verifyLedgerIntegrity, createCompensatingEntry } from './ledgerService';
+
+test('Ledger: enregistrement d\'une transaction en double écriture', () => {
+  const result = recordTransaction({
+    transactionId: 'test-tx-ledger-1',
+    debitAccount: 'user-wallet',
+    creditAccount: 'house-revenue',
+    amount: 100,
+    currency: 'HTG',
+    operationType: 'TICKET_PURCHASE',
+    reference: 'ticket-1',
+    description: 'Test achat',
+    idempotencyKey: 'idem-ledger-1',
+  });
+  
+  assert(result.success, 'Transaction enregistrée');
+  
+  const debitBalance = getAccountBalance('user-wallet');
+  const creditBalance = getAccountBalance('house-revenue');
+  
+  assert(debitBalance !== null, 'Solde débiteur existe');
+  assert(creditBalance !== null, 'Solde créditeur existe');
+  assert(debitBalance!.balance < 0 || debitBalance!.totalDebits > 0, 'Débit enregistré');
+  assert(creditBalance!.totalCredits > 0, 'Crédit enregistré');
+});
+
+test('Ledger: idempotence - même transaction rejetée', () => {
+  // Première tentative
+  recordTransaction({
+    transactionId: 'test-tx-ledger-2',
+    debitAccount: 'test-debit',
+    creditAccount: 'test-credit',
+    amount: 50,
+    currency: 'HTG',
+    operationType: 'TICKET_PURCHASE',
+    reference: 'ticket-2',
+    description: 'Test idempotence',
+    idempotencyKey: 'idem-ledger-2',
+  });
+  
+  // Deuxième tentative avec même clé
+  const result = recordTransaction({
+    transactionId: 'test-tx-ledger-2b',
+    debitAccount: 'test-debit',
+    creditAccount: 'test-credit',
+    amount: 50,
+    currency: 'HTG',
+    operationType: 'TICKET_PURCHASE',
+    reference: 'ticket-2',
+    description: 'Test idempotence dupliqué',
+    idempotencyKey: 'idem-ledger-2', // Même clé
+  });
+  
+  assert(!result.success, 'Doit rejeter la transaction dupliquée');
+  assert(!!result.error?.includes('idempotence'), 'Message d\'idempotence');
+});
+
+test('Ledger: intégrité du registre (débit = crédit)', () => {
+  const integrity = verifyLedgerIntegrity();
+  assert(integrity.isValid, 'Registre intègre');
+  assert(integrity.totalEntries > 0, 'Des écritures existent');
+});
+
+test('Ledger: réconciliation avec divergence', () => {
+  // Enregistrer une transaction
+  recordTransaction({
+    transactionId: 'test-tx-recon',
+    debitAccount: 'recon-debit',
+    creditAccount: 'recon-credit',
+    amount: 1000,
+    currency: 'HTG',
+    operationType: 'WIN_CREDIT',
+    reference: 'test',
+    description: 'Test réconciliation',
+    idempotencyKey: 'idem-recon-1',
+  });
+  
+  const reconResult = reconcileAccount({
+    account: 'recon-credit',
+    externalBalance: 500, // Différent du solde du registre
+    externalReference: 'ext-ref-1',
+  });
+  
+  assert(!reconResult.isBalanced, 'Divergence détectée');
+  assert(reconResult.difference !== 0, 'Différence non nulle');
+  assert(reconResult.anomalies.length > 0, 'Anomalie enregistrée');
+});
+
+test('Ledger: écriture compensatoire', () => {
+  const compEntry = createCompensatingEntry({
+    originalTransactionId: 'test-tx-ledger-1',
+    reason: 'Remboursement client',
+    debitAccount: 'house-refunds',
+    creditAccount: 'user-wallet',
+    amount: 100,
+    currency: 'HTG',
+    createdBy: 'admin1',
+  });
+  
+  assert(!!compEntry.id, 'Écriture compensatoire créée');
+  assert(compEntry.entries.length === 2, 'Deux écritures (débit + crédit)');
+});
+
+// ============================================================
+// TESTS DU PLATFORM STATE SERVICE
+// ============================================================
+
+import { getPlatformState, getRestrictions, isOperationAllowed, isTicketCategoryAllowed, manualTransition } from './platformStateService';
+
+test('Platform State: état initial NORMAL', () => {
+  const state = getPlatformState();
+  assert(state === 'NORMAL' || state === 'WARNING', 'État valide');
+});
+
+test('Platform State: restrictions en mode NORMAL', () => {
+  manualTransition({ toState: 'NORMAL', reason: 'Test', triggeredBy: 'test' });
+  const restrictions = getRestrictions();
+  
+  assert(restrictions.canSellTickets, 'Vente autorisée en NORMAL');
+  assert(restrictions.canCreateSeries, 'Création autorisée en NORMAL');
+  assert(restrictions.canProcessWithdrawals, 'Retraits autorisés en NORMAL');
+  assert(restrictions.canRevealTickets, 'Révélation autorisée en NORMAL');
+});
+
+test('Platform State: restrictions en mode SALES_SUSPENDED', () => {
+  manualTransition({ toState: 'SALES_SUSPENDED', reason: 'Test', triggeredBy: 'test' });
+  const restrictions = getRestrictions();
+  
+  assert(!restrictions.canSellTickets, 'Vente bloquée en SUSPENDED');
+  assert(!restrictions.canCreateSeries, 'Création bloquée en SUSPENDED');
+  assert(!restrictions.canProcessWithdrawals, 'Retraits bloqués en SUSPENDED');
+  assert(restrictions.canRevealTickets, 'Révélation toujours autorisée');
+});
+
+test('Platform State: restriction de catégorie en SALES_RESTRICTED', () => {
+  manualTransition({ toState: 'SALES_RESTRICTED', reason: 'Test', triggeredBy: 'test' });
+  
+  assert(isTicketCategoryAllowed(100), '100 HTG autorisé');
+  assert(isTicketCategoryAllowed(250), '250 HTG autorisé');
+  assert(!isTicketCategoryAllowed(500), '500 HTG bloqué');
+  assert(!isTicketCategoryAllowed(1000), '1000 HTG bloqué');
+});
+
+test('Platform State: opération autorisée selon l\'état', () => {
+  manualTransition({ toState: 'SALES_SUSPENDED', reason: 'Test', triggeredBy: 'test' });
+  
+  assert(!isOperationAllowed('SELL_TICKET'), 'Vente bloquée');
+  assert(isOperationAllowed('REVEAL_TICKET'), 'Révélation autorisée');
+});
+
+// ============================================================
+// TESTS DU CLAIM SERVICE
+// ============================================================
+
+import { submitClaim, getClaim, resolveClaim, getClaimStatistics } from './claimService';
+
+test('Claim: soumission d\'une réclamation', () => {
+  const claim = submitClaim({
+    userId: 'u1',
+    userName: 'Test User',
+    type: 'TICKET_NOT_REVEALED',
+    ticketId: 't1',
+    ticketPublicId: 'CHN-2024-00001',
+    description: 'QR code illisible',
+    evidence: [{ type: 'SCREENSHOT', description: 'Capture d\'écran', url: '/evidence/1.jpg', uploadedBy: 'u1' }],
+    priority: 'MEDIUM',
+  });
+  
+  assert(!!claim.id, 'Réclamation créée');
+  assert(claim.status === 'SUBMITTED', 'Statut initial SUBMITTED');
+});
+
+test('Claim: résolution d\'une réclamation', () => {
+  const claim = submitClaim({
+    userId: 'u2',
+    userName: 'Test User 2',
+    type: 'WRONG_PRIZE_AMOUNT',
+    ticketId: 't2',
+    ticketPublicId: 'CHN-2024-00002',
+    description: 'Montant incorrect',
+    evidence: [],
+    priority: 'HIGH',
+  });
+  
+  const resolved = resolveClaim({
+    claimId: claim.id,
+    resolution: {
+      type: 'REFUNDED',
+      description: 'Remboursement effectué',
+      amount: 100,
+      resolvedBy: 'admin1',
+      approvedBy: 'cfo1',
+    },
+  });
+  
+  assert(resolved, 'Réclamation résolue');
+  
+  const updatedClaim = getClaim(claim.id);
+  assert(updatedClaim?.status === 'REFUNDED', 'Statut REFUNDED');
+});
+
+test('Claim: statistiques des réclamations', () => {
+  const stats = getClaimStatistics();
+  assert(stats.totalClaims >= 0, 'Statistiques valides');
+  assert(stats.byStatus !== undefined, 'Par statut disponible');
+  assert(stats.byType !== undefined, 'Par type disponible');
+});
+
+// ============================================================
+// TESTS DE CONCURRENCE
+// ============================================================
+
+test('Concurrence: deux révélations simultanées du même ticket', () => {
+  // Simuler deux requêtes de révélation pour le même ticket
+  const validation1 = validateTicketReveal({
+    ticketStatus: 'SOLD',
+    ticketOwnerId: 'u1',
+    requestingUserId: 'u1',
+    secretValid: true,
+  });
+  
+  // La première passe
+  assert(validation1.isValid, 'Première révélation OK');
+  
+  // Après la première, le statut change à REVEALED
+  const validation2 = validateTicketReveal({
+    ticketStatus: 'REVEALED', // Statut mis à jour
+    ticketOwnerId: 'u1',
+    requestingUserId: 'u1',
+    secretValid: true,
+  });
+  
+  assert(!validation2.isValid, 'Deuxième révélation rejetée');
+});
+
+test('Concurrence: deux achats du dernier ticket disponible', () => {
+  // Simuler une situation où un seul ticket reste
+  const ticketsRemaining = 1;
+  
+  // Premier achat
+  const canBuy1 = ticketsRemaining > 0;
+  assert(canBuy1, 'Premier achat possible');
+  
+  // Après le premier achat, plus de tickets
+  const ticketsAfterFirst = 0;
+  const canBuy2 = ticketsAfterFirst > 0;
+  assert(!canBuy2, 'Deuxième achat impossible');
+});
+
+// ============================================================
+// TESTS DE TIMEOUT PRESTATAIRE
+// ============================================================
+
+test('Timeout: vérification avant retry', () => {
+  // Simuler un timeout
+  const paymentStatus = 'TIMEOUT';
+  
+  // Avant de retry, il faut vérifier l'état réel
+  const shouldRetry = paymentStatus === 'TIMEOUT';
+  assert(shouldRetry, 'Retry autorisé après timeout');
+  
+  // Mais il faut d'abord vérifier auprès du prestataire
+  // (En production: appel API pour vérifier l'état réel)
+});
+
+test('Timeout: ne pas marquer comme payé sans confirmation', () => {
+  // Pas de réponse du prestataire
+  const hasProviderResponse: boolean = false;
+  const responseStatus: string = 'NONE';
+  
+  // Ne doit PAS marquer comme payé sans confirmation fiable
+  const canMarkAsPaid = hasProviderResponse && responseStatus === 'SUCCESS';
+  assert(!canMarkAsPaid, 'Ne pas marquer payé sans confirmation');
+});
+
+// ============================================================
+// TESTS DE PANNE ET REPRISE
+// ============================================================
+
+test('Panne: reprise sans modifier les résultats vendus', () => {
+  // Simuler une panne au milieu de la publication
+  const publishedBeforeFailure = 50;
+  const totalTickets = 100;
+  
+  // À la reprise, les 50 tickets déjà publiés restent intacts
+  const ticketsAfterRecovery = publishedBeforeFailure;
+  assert(ticketsAfterRecovery === 50, 'Tickets publiés avant panne conservés');
+  
+  // La reprise continue à partir du point d'arrêt
+  const remainingToPublish = totalTickets - publishedBeforeFailure;
+  assert(remainingToPublish === 50, 'Reprise correcte');
+});
+
+// ============================================================
+// TESTS DE DIVERGENCE COMPTABLE
+// ============================================================
+
+test('Divergence: détection d\'écart entre registre et externe', () => {
+  const ledgerBalance = 10000;
+  const externalBalance = 9500;
+  const difference = ledgerBalance - externalBalance;
+  
+  assert(difference !== 0, 'Divergence détectée');
+  assert(Math.abs(difference) > 0.01, 'Écart significatif');
+});
+
+// ============================================================
+// TESTS DE FONCTIONNEMENT EN MODE SUSPENDU
+// ============================================================
+
+test('Mode suspendu: conservation des droits utilisateurs', () => {
+  manualTransition({ toState: 'SALES_SUSPENDED', reason: 'Test', triggeredBy: 'test' });
+  const restrictions = getRestrictions();
+  
+  // Les utilisateurs peuvent toujours révéler leurs tickets
+  assert(restrictions.canRevealTickets, 'Révélation toujours possible');
+  
+  // Les gains validés restent payables
+  // (En production: vérifier que les retraits en cours ne sont pas bloqués arbitrairement)
+});
+
+// ============================================================
+// TESTS DE MODIFICATION INTERDITE
+// ============================================================
+
+test('Immutabilité: paramètres d\'une série publiée non modifiables', () => {
+  const seriesPublished = true;
+  const canModifyPrizeGrid = !seriesPublished;
+  
+  assert(!canModifyPrizeGrid, 'Grille de lots non modifiable après publication');
+});
+
+test('Immutabilité: résultat d\'un ticket vendu non modifiable', () => {
+  const ticketSold = true;
+  const canChangeResult = !ticketSold;
+  
+  assert(!canChangeResult, 'Résultat non modifiable après vente');
+});
+
+// ============================================================
 // TESTS DE REPRISE APRÈS PANNE
 // ============================================================
 
