@@ -1,8 +1,10 @@
 export type TicketStatus = 'CREATED' | 'SOLD' | 'REVEALED' | 'REDEEMED';
 export type TicketType = 'PHYSICAL' | 'VIRTUAL';
-export type WithdrawalStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'FAILED';
+export type WithdrawalStatus = 'REQUESTED' | 'VALIDATED' | 'PROCESSING' | 'PAID' | 'REJECTED' | 'FAILED' | 'RECONCILED';
 export type WithdrawalProvider = 'MONCASH' | 'NATCASH';
-export type TransactionType = 'TICKET_PURCHASE' | 'WIN_CREDIT' | 'WITHDRAWAL_REQUEST' | 'WITHDRAWAL_COMPLETED' | 'DEPOSIT';
+export type TransactionType = 'TICKET_PURCHASE' | 'WIN_CREDIT' | 'WITHDRAWAL_REQUEST' | 'WITHDRAWAL_COMPLETED' | 'WITHDRAWAL_FAILED' | 'DEPOSIT' | 'REFUND' | 'RESERVE_ALLOCATION';
+export type SeriesStatus = 'DRAFT' | 'PUBLISHED' | 'SOLD_OUT' | 'SUSPENDED' | 'CLOSED';
+export type FinancialAlertLevel = 'INFO' | 'WARNING' | 'CRITICAL';
 
 export interface User {
   id: string;
