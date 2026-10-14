@@ -8,12 +8,15 @@
 import { hashPassword, verifyPassword, generateRandomString } from './cryptoService';
 
 // Types
+export type UserRole = 'USER' | 'SUPPORT' | 'FINANCE' | 'ADMIN' | 'SUPER_ADMIN';
+
 export interface User {
   id: string;
   email: string;
   passwordHash: string;
   passwordSalt: string;
   emailVerified: boolean;
+  role: UserRole;
   createdAt: string;
   lastLoginAt: string | null;
   verificationCode?: string;
@@ -137,6 +140,7 @@ export async function registerUser(
       passwordHash: hash,
       passwordSalt: salt,
       emailVerified: false,
+      role: 'USER', // Rôle par défaut pour les nouveaux utilisateurs
       createdAt: new Date().toISOString(),
       lastLoginAt: null,
       verificationCode,

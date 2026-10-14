@@ -17,6 +17,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { VerifyEmailPage } from './pages/VerifyEmailPage';
 import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { PrivateRoute } from './components/PrivateRoute';
 import { useEffect } from 'react';
 import { loadSession } from './services/authService';
 import { restoreSession } from './services/userAuthService';
@@ -31,19 +32,15 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Routes Publiques */}
+        {/* Routes Publiques - Accessibles sans connexion */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/boutique" element={<ShopPage />} />
-        <Route path="/portefeuille" element={<WalletPage />} />
-        <Route path="/mes-tickets" element={<TicketsPage />} />
-        <Route path="/retrait" element={<WithdrawalPage />} />
         
         {/* Authentification Utilisateur */}
         <Route path="/inscription" element={<RegisterPage />} />
         <Route path="/verification-email" element={<VerifyEmailPage />} />
         <Route path="/connexion" element={<LoginPage />} />
         
-        {/* Pages Informatives */}
+        {/* Pages Informatives - Accessibles sans connexion */}
         <Route path="/aide" element={<HelpPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/faq" element={<FAQPage />} />
@@ -51,10 +48,32 @@ function App() {
         <Route path="/confidentialite" element={<PrivacyPage />} />
         <Route path="/jeu-responsable" element={<ResponsibleGamingPage />} />
         
+        {/* Routes Privées - Réservées aux utilisateurs connectés */}
+        <Route path="/boutique" element={
+          <PrivateRoute>
+            <ShopPage />
+          </PrivateRoute>
+        } />
+        <Route path="/portefeuille" element={
+          <PrivateRoute>
+            <WalletPage />
+          </PrivateRoute>
+        } />
+        <Route path="/mes-tickets" element={
+          <PrivateRoute>
+            <TicketsPage />
+          </PrivateRoute>
+        } />
+        <Route path="/retrait" element={
+          <PrivateRoute>
+            <WithdrawalPage />
+          </PrivateRoute>
+        } />
+        
         {/* Route Admin - URL secrète */}
         <Route path="/gestion-privee/connexion" element={<AdminLoginPage />} />
         
-        {/* Routes Admin Protégées */}
+        {/* Routes Admin Protégées - Réservées aux administrateurs */}
         <Route
           path="/gestion-privee"
           element={
@@ -64,7 +83,7 @@ function App() {
           }
         />
         
-        {/* Route Architecture Protégée */}
+        {/* Route Architecture Protégée - Réservée aux super administrateurs */}
         <Route
           path="/gestion-privee/architecture"
           element={

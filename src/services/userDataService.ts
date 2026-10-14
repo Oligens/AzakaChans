@@ -4,14 +4,36 @@
  * Service qui fournit des données cohérentes pour l'utilisateur connecté.
  * Utilise les données mock comme source de vérité et calcule les agrégats
  * de manière cohérente entre le portefeuille et les tickets.
+ * 
+ * SÉCURITÉ: Toutes les fonctions vérifient l'authentification et isolent
+ * les données par utilisateur. Aucun accès aux données d'un autre utilisateur.
  */
 
 import { mockWallets, mockTickets, mockTransactions, mockWithdrawals } from '../data';
 import { Ticket, Transaction } from '../types';
 import { WithdrawalRequest } from '../engine/types';
+import { getCurrentUser } from './userAuthService';
 
-// ID de l'utilisateur connecté (en production: venir de l'auth)
-const CURRENT_USER_ID = 'u1';
+/**
+ * Récupère l'ID de l'utilisateur actuellement connecté
+ * Retourne null si l'utilisateur n'est pas connecté
+ */
+function getCurrentUserId(): string | null {
+  const user = getCurrentUser();
+  return user?.id || null;
+}
+
+/**
+ * Vérifie qu'un utilisateur est connecté et retourne son ID
+ * Lance une erreur si l'utilisateur n'est pas connecté
+ */
+function requireAuthenticatedUser(): string {
+  const userId = getCurrentUserId();
+  if (!userId) {
+    throw new Error('ACCÈS REFUSÉ: Vous devez être connecté pour accéder à cette ressource');
+  }
+  return userId;
+}
 
 // ============================================================
 // TYPES
@@ -52,9 +74,12 @@ export interface UserTransactionsData {
 /**
  * Obtenir les données du portefeuille de l'utilisateur
  * Calculées à partir des transactions réelles
+ * SÉCURITÉ: Vérifie l'authentification et isole les données
  */
 export function getUserWalletData(): UserWalletData {
-  const wallet = mockWallets[CURRENT_USER_ID];
+  const userId = requireAuthenticatedUser();
+  
+  const wallet = mockWallets[userId];
   if (!wallet) {
     return {
       balance: 0,
@@ -66,9 +91,9 @@ export function getUserWalletData(): UserWalletData {
     };
   }
 
-  // Calculer les retraits en attente
+  // Calculer les retraits en attente - ISOLATION: uniquement les retraits de cet utilisateur
   const userWithdrawals = mockWithdrawals.filter(
-    w => w.userId === CURRENT_USER_ID && 
+    w => w.userId === userId && 
          (w.status === 'REQUESTED' || w.status === 'VALIDATED' || w.status === 'PROCESSING')
   );
   const pendingWithdrawals = userWithdrawals.reduce((sum, w) => sum + w.amount, 0);
@@ -89,10 +114,13 @@ export function getUserWalletData(): UserWalletData {
 /**
  * Obtenir les données des tickets de l'utilisateur
  * Filtrées et agrégées de manière cohérente
+ * SÉCURITÉ: Vérifie l'authentification et isole les données
  */
 export function getUserTicketsData(): UserTicketsData {
-  // Filtrer les tickets de l'utilisateur
-  const userTickets = mockTickets.filter(t => t.ownerId === CURRENT_USER_ID);
+  const userId = requireAuthenticatedUser();
+  
+  // ISOLATION: Filtrer uniquement les tickets de cet utilisateur
+  const userTickets = mockTickets.filter(t => t.ownerId === userId);
 
   // Calculer les statistiques
   const ticketsToReveal = userTickets.filter(t => t.status === 'SOLD').length;
@@ -126,29 +154,32 @@ export function getUserTicketsData(): UserTicketsData {
 
 /**
  * Obtenir les transactions de l'utilisateur
+ * SÉCURITÉ: Vérifie l'authentification et isole les données
  */
 export function getUserTransactionsData(): UserTransactionsData {
-  // Filtrer les transactions de l'utilisateur
+  const userId = requireAuthenticatedUser();
+  
+  // ISOLATION: Filtrer uniquement les transactions de cet utilisateur
   const userTransactions = mockTransactions.filter(
-    t => t.debitAccount === `${CURRENT_USER_ID}-wallet` || 
-         t.creditAccount === `${CURRENT_USER_ID}-wallet`
+    t => t.debitAccount === `${userId}-wallet` || 
+         t.creditAccount === `${userId}-wallet`
   );
 
   // Calculer les agrégats
   const totalDeposits = userTransactions
-    .filter(t => t.creditAccount === `${CURRENT_USER_ID}-wallet` && t.type === 'DEPOSIT')
+    .filter(t => t.creditAccount === `${userId}-wallet` && t.type === 'DEPOSIT')
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalWithdrawals = userTransactions
-    .filter(t => t.debitAccount === `${CURRENT_USER_ID}-wallet` && t.type === 'WITHDRAWAL_REQUEST')
+    .filter(t => t.debitAccount === `${userId}-wallet` && t.type === 'WITHDRAWAL_REQUEST')
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalPurchases = userTransactions
-    .filter(t => t.debitAccount === `${CURRENT_USER_ID}-wallet` && t.type === 'TICKET_PURCHASE')
+    .filter(t => t.debitAccount === `${userId}-wallet` && t.type === 'TICKET_PURCHASE')
     .reduce((sum, t) => sum + t.amount, 0);
 
   const totalWinnings = userTransactions
-    .filter(t => t.creditAccount === `${CURRENT_USER_ID}-wallet` && t.type === 'WIN_CREDIT')
+    .filter(t => t.creditAccount === `${userId}-wallet` && t.type === 'WIN_CREDIT')
     .reduce((sum, t) => sum + t.amount, 0);
 
   return {
@@ -162,16 +193,22 @@ export function getUserTransactionsData(): UserTransactionsData {
 
 /**
  * Obtenir les retraits de l'utilisateur
+ * SÉCURITÉ: Vérifie l'authentification et isole les données
  */
 export function getUserWithdrawals(): WithdrawalRequest[] {
-  return mockWithdrawals.filter(w => w.userId === CURRENT_USER_ID);
+  const userId = requireAuthenticatedUser();
+  
+  // ISOLATION: Filtrer uniquement les retraits de cet utilisateur
+  return mockWithdrawals.filter(w => w.userId === userId);
 }
 
 /**
  * Vérifier la cohérence entre le portefeuille et les tickets
  * Retourne true si les données sont cohérentes
+ * SÉCURITÉ: Vérifie l'authentification
  */
 export function verifyDataConsistency(): { isConsistent: boolean; issues: string[] } {
+  // Cette fonction vérifie l'authentification via les appels aux autres fonctions
   const walletData = getUserWalletData();
   const ticketsData = getUserTicketsData();
   const transactionsData = getUserTransactionsData();
@@ -207,15 +244,19 @@ export function verifyDataConsistency(): { isConsistent: boolean; issues: string
 /**
  * Révéler un ticket (simulation)
  * En production: appeler l'API backend
+ * SÉCURITÉ: Vérifie l'authentification et la propriété du ticket
  */
 export function revealTicket(ticketId: string): { success: boolean; ticket?: Ticket; error?: string } {
+  const userId = requireAuthenticatedUser();
+  
   const ticket = mockTickets.find(t => t.id === ticketId);
   
   if (!ticket) {
     return { success: false, error: 'Ticket non trouvé' };
   }
 
-  if (ticket.ownerId !== CURRENT_USER_ID) {
+  // SÉCURITÉ: Vérifier que le ticket appartient à l'utilisateur connecté
+  if (ticket.ownerId !== userId) {
     return { success: false, error: 'Ce ticket ne vous appartient pas' };
   }
 
@@ -243,6 +284,7 @@ export function revealTicket(ticketId: string): { success: boolean; ticket?: Tic
 /**
  * Créer une demande de retrait (simulation)
  * En production: appeler l'API backend
+ * SÉCURITÉ: Vérifie l'authentification et le solde
  */
 export function createWithdrawal(params: {
   amount: number;
@@ -250,6 +292,8 @@ export function createWithdrawal(params: {
   beneficiaryName: string;
   destination: string;
 }): { success: boolean; withdrawal?: WithdrawalRequest; error?: string } {
+  const userId = requireAuthenticatedUser();
+  
   const walletData = getUserWalletData();
 
   // Validation
@@ -262,9 +306,10 @@ export function createWithdrawal(params: {
   }
 
   // Créer le retrait (en production: appel API backend)
+  // SÉCURITÉ: Le userId vient de la session authentifiée, pas du client
   const withdrawal: WithdrawalRequest = {
     id: `w${Date.now()}`,
-    userId: CURRENT_USER_ID,
+    userId: userId,
     amount: params.amount,
     provider: params.method === 'BANK' ? 'MONCASH' : params.method, // Simplification
     phoneNumber: params.destination,
