@@ -19,16 +19,16 @@ export function HelpPage() {
           </div>
           <div className="space-y-3 ml-13">
             <HelpItem title="Création d'un compte">
-              Pour créer un compte, cliquez sur "Commencer" depuis la page d'accueil et suivez les instructions. Vous devrez fournir une adresse email valide et créer un mot de passe sécurisé.
+              Pour créer un compte, cliquez sur "Commencer" depuis la page d'accueil. Saisissez votre adresse email et créez un mot de passe sécurisé (minimum 8 caractères). Après validation, vous recevrez un code de vérification à 6 chiffres par email. Saisissez ce code pour activer votre compte. Une fois vérifié, vous pourrez vous connecter.
             </HelpItem>
             <HelpItem title="Connexion">
-              Utilisez votre adresse email et votre mot de passe pour vous connecter. Si vous avez oublié votre mot de passe, utilisez le lien "Mot de passe oublié" sur la page de connexion.
+              Utilisez votre adresse email et votre mot de passe pour vous connecter. Si votre adresse email n'a pas encore été vérifiée, vous serez invité à compléter la vérification. Si vous avez oublié votre mot de passe, utilisez le lien "Mot de passe oublié" sur la page de connexion.
             </HelpItem>
             <HelpItem title="Modification des informations">
               Vous pouvez modifier vos informations personnelles depuis votre profil. Accédez-y via le menu utilisateur après connexion.
             </HelpItem>
             <HelpItem title="Sécurité du compte">
-              Nous recommandons d'utiliser un mot de passe fort et unique. Activez l'authentification à deux facteurs si disponible pour sécuriser davantage votre compte.
+              Nous recommandons d'utiliser un mot de passe fort et unique. Ne partagez jamais vos identifiants avec qui que ce soit. Déconnectez-vous après utilisation sur un appareil partagé.
             </HelpItem>
           </div>
         </section>

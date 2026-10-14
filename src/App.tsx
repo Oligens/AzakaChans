@@ -13,14 +13,19 @@ import { FAQPage } from './pages/FAQPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { ResponsibleGamingPage } from './pages/ResponsibleGamingPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useEffect } from 'react';
 import { loadSession } from './services/authService';
+import { restoreSession } from './services/userAuthService';
 
 function App() {
   // Charger la session au démarrage
   useEffect(() => {
     loadSession();
+    restoreSession(); // Restaurer la session utilisateur
   }, []);
 
   return (
@@ -32,6 +37,11 @@ function App() {
         <Route path="/portefeuille" element={<WalletPage />} />
         <Route path="/mes-tickets" element={<TicketsPage />} />
         <Route path="/retrait" element={<WithdrawalPage />} />
+        
+        {/* Authentification Utilisateur */}
+        <Route path="/inscription" element={<RegisterPage />} />
+        <Route path="/verification-email" element={<VerifyEmailPage />} />
+        <Route path="/connexion" element={<LoginPage />} />
         
         {/* Pages Informatives */}
         <Route path="/aide" element={<HelpPage />} />

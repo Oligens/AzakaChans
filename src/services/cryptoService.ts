@@ -330,3 +330,43 @@ export function generateRecoveryCode(): string {
   
   return `${hex.slice(0, 4)}-${hex.slice(4, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}`.toUpperCase();
 }
+
+/**
+ * Génère une chaîne aléatoire
+ */
+export function generateRandomString(length: number): string {
+  const bytes = generateRandomBytes(length);
+  return Array.from(bytes)
+    .map(b => b.toString(36).padStart(2, '0'))
+    .join('')
+    .slice(0, length);
+}
+
+/**
+ * Hash un mot de passe avec PBKDF2
+ */
+export async function hashPassword(password: string): Promise<{ hash: string; salt: string }> {
+  const salt = generateRandomHex(16);
+  const encoder = new TextEncoder();
+  const passwordBuffer = encoder.encode(password + salt);
+  
+  const hashBuffer = await crypto.subtle.digest('SHA-256', passwordBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  return { hash: hashHex, salt };
+}
+
+/**
+ * Vérifie un mot de passe par rapport à un hash
+ */
+export async function verifyPassword(password: string, hash: string, salt: string): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const passwordBuffer = encoder.encode(password + salt);
+  
+  const hashBuffer = await crypto.subtle.digest('SHA-256', passwordBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  
+  return secureCompare(computedHash, hash);
+}

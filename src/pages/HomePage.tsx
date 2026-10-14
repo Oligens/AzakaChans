@@ -27,7 +27,7 @@ export function HomePage() {
               <a href="#features" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Fonctionnalités</a>
               <a href="#jackpot" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Jackpot</a>
               <a href="#security" className="text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>Sécurité</a>
-              <Link to="/boutique" className="btn-premium text-sm">
+              <Link to="/inscription" className="btn-premium text-sm">
                 Commencer
               </Link>
             </div>
