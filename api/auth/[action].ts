@@ -58,22 +58,29 @@ async function getSessionUser(sql: ReturnType<typeof neon>, token: string) {
     LIMIT 1
   `;
   if (!rows[0]) return null;
-  await ensureProfileAndWallet(sql, String(rows[0].id));
-  await sql`UPDATE sessions SET last_activity_at = NOW() WHERE token = ${token}`;
+  // Session validation is intentionally read-only: it must not create profile/wallet
+  // rows on every page load. Those records are initialized during registration/login.
   return publicUser(rows[0]);
 }
 
 export default async function handler(req: Req, res: Res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) return jsonError(res, 503, 'Le serveur de base de données n’est pas configuré.');
-  const sql = neon(databaseUrl);
   const action = (req.url || '').split('?')[0].split('/').filter(Boolean).pop() || '';
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const email = normalizeEmail(body.email);
 
+  // A visitor without a session is simply logged out; do not make the initial
+  // session check depend on Neon being configured or reachable.
+  if (action === 'session' && req.method === 'GET' && !getCookie(req, COOKIE)) {
+    return res.status(200).json({ success: true, user: null });
+  }
+
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) return jsonError(res, 503, 'Le serveur de base de données n’est pas configuré.');
+
   try {
+    const sql = neon(databaseUrl);
     if (action === 'session' || action === '[action]') {
       if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); return jsonError(res, 405, 'Méthode non autorisée.'); }
       const token = getCookie(req, COOKIE);
@@ -195,8 +202,14 @@ export default async function handler(req: Req, res: Res) {
 
     return jsonError(res, 404, 'Route d’authentification inconnue.');
   } catch (error) {
-    // Do not leak SQL, passwords, session tokens, or database credentials.
-    console.error('Auth API error:', error instanceof Error ? error.message : 'unknown error');
+    // Log diagnostic details for Vercel without returning internals to the browser.
+    const err = error as { message?: string; code?: string; stack?: string };
+    console.error('Auth API error:', {
+      action,
+      code: err?.code ?? null,
+      message: err?.message ?? 'unknown error',
+      stack: err?.stack ?? null,
+    });
     return jsonError(res, 500, 'Erreur serveur pendant l’authentification. Vérifiez la configuration Neon et les migrations.');
   }
 }
