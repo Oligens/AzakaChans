@@ -545,6 +545,37 @@ CREATE TABLE IF NOT EXISTS sessions (
     CONSTRAINT sessions_expires_after_created CHECK (expires_at > created_at)
 );
 
+-- ============================================================
+-- COMPATIBILITÉ DES SCHÉMAS DÉJÀ EXISTANTS
+-- CREATE TABLE IF NOT EXISTS ne met pas à jour une table ancienne.
+-- Ces ALTER sont additifs et peuvent être exécutés plusieurs fois.
+-- ============================================================
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
+
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE;
+
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_profiles_user_id_compat ON user_profiles(user_id);
+
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS balance BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS currency VARCHAR(3) NOT NULL DEFAULT 'HTG';
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS total_deposits BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS total_withdrawals BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS total_winnings BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS reserved_amount BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE wallets ADD COLUMN IF NOT EXISTS available_balance BIGINT GENERATED ALWAYS AS (balance - reserved_amount) STORED;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_wallets_user_id_compat ON wallets(user_id);
+
+
 -- Index pour les recherches fréquentes
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
