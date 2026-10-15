@@ -1,10 +1,12 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 
 const scrypt = promisify(scryptCallback);
 type Req = { method?: string; body?: any; headers: Record<string, string | string[] | undefined>; url?: string };
 type Res = { setHeader(name: string, value: string | string[]): void; status(code: number): Res; json(body: any): void; end(): void };
+type Sql = NeonQueryFunction<false, false>;
+type Row = Record<string, any>;
 
 const COOKIE = 'azaka_session';
 const SESSION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -36,7 +38,7 @@ function setSessionCookie(res: Res, token: string, maxAge: number) {
 function clearSessionCookie(res: Res) {
   res.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`);
 }
-function publicUser(row: any) {
+function publicUser(row: Row) {
   return {
     id: row.id,
     email: row.email,
@@ -47,18 +49,18 @@ function publicUser(row: any) {
     fullName: row.full_name ?? null,
   };
 }
-async function ensureProfileAndWallet(sql: ReturnType<typeof neon>, userId: string) {
+async function ensureProfileAndWallet(sql: Sql, userId: string) {
   await sql`INSERT INTO user_profiles (user_id) VALUES (${userId}::uuid) ON CONFLICT (user_id) DO NOTHING`;
   await sql`INSERT INTO wallets (user_id) VALUES (${userId}::uuid) ON CONFLICT (user_id) DO NOTHING`;
 }
-async function getSessionUser(sql: ReturnType<typeof neon>, token: string) {
-  const rows = await sql`
+async function getSessionUser(sql: Sql, token: string) {
+  const rows = (await sql`
     SELECT u.id, u.email, u.email_verified, u.role, u.created_at, u.last_login_at, u.full_name
     FROM sessions s JOIN users u ON u.id = s.user_id
     WHERE s.token = ${token} AND s.is_active = TRUE AND s.expires_at > NOW()
       AND u.is_active = TRUE AND u.is_suspended = FALSE
     LIMIT 1
-  `;
+  `) as Row[];
   if (!rows[0]) return null;
   const userId = String(rows[0].id);
 
@@ -95,7 +97,7 @@ export default async function handler(req: Req, res: Res) {
   if (!databaseUrl) return jsonError(res, 503, 'Le serveur de base de données n’est pas configuré.');
 
   try {
-    const sql = neon(databaseUrl);
+    const sql: Sql = neon(databaseUrl);
     if (action === 'session' || action === '[action]') {
       if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); return jsonError(res, 405, 'Méthode non autorisée.'); }
       const token = getCookie(req, COOKIE);
@@ -118,18 +120,18 @@ export default async function handler(req: Req, res: Res) {
       const password = typeof body.password === 'string' ? body.password : '';
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return jsonError(res, 400, 'Adresse email invalide.');
       if (password.length < 8 || password.length > 256) return jsonError(res, 400, 'Le mot de passe doit contenir entre 8 et 256 caractères.');
-      const existing = await sql`SELECT id, email_verified FROM users WHERE email_normalized = ${email} LIMIT 1`;
+      const existing = (await sql`SELECT id, email_verified FROM users WHERE email_normalized = ${email} LIMIT 1`) as Row[];
       if (existing.length) return jsonError(res, 409, existing[0].email_verified ? 'Cette adresse email est déjà associée à un compte.' : 'Un compte est déjà en attente de vérification. Utilisez « Renvoyer le code ».');
       const salt = randomBytes(16).toString('hex');
       const passwordHash = (await hashPassword(password, salt)).toString('hex');
       const code = randomBytes(4).readUInt32BE(0) % 900000 + 100000;
       const verificationCode = String(code);
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      const inserted = await sql`
+      const inserted = (await sql`
         INSERT INTO users (email, email_normalized, password_hash, password_salt, role, email_verified)
         VALUES (${email}, ${email}, ${passwordHash}, ${salt}, 'USER', FALSE)
         RETURNING id, email
-      `;
+      `) as Row[];
       const userId = String(inserted[0].id);
       await ensureProfileAndWallet(sql, userId);
       await sql`UPDATE email_verifications SET status = 'EXPIRED', invalidated_at = NOW() WHERE user_id = ${userId}::uuid AND status = 'PENDING'`;
@@ -155,12 +157,12 @@ export default async function handler(req: Req, res: Res) {
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return jsonError(res, 405, 'Méthode non autorisée.'); }
       const code = typeof body.code === 'string' ? body.code.trim() : '';
       if (!email || !/^\d{6}$/.test(code)) return jsonError(res, 400, 'Email et code à 6 chiffres requis.');
-      const rows = await sql`
+      const rows = (await sql`
         SELECT ev.id AS verification_id, ev.user_id, ev.attempts, ev.max_attempts, ev.expires_at, ev.code_hash, ev.verification_code
         FROM email_verifications ev JOIN users u ON u.id = ev.user_id
         WHERE u.email_normalized = ${email} AND ev.status = 'PENDING'
         ORDER BY ev.created_at DESC LIMIT 1
-      `;
+      `) as Row[];
       const verification = rows[0];
       if (!verification) return jsonError(res, 404, 'Aucune vérification active pour cette adresse. Réinscrivez-vous ou demandez un nouveau code.');
       if (new Date(String(verification.expires_at)).getTime() < Date.now()) {
@@ -180,7 +182,7 @@ export default async function handler(req: Req, res: Res) {
 
     if (action === 'resend') {
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return jsonError(res, 405, 'Méthode non autorisée.'); }
-      const users = await sql`SELECT id, email_verified FROM users WHERE email_normalized = ${email} LIMIT 1`;
+      const users = (await sql`SELECT id, email_verified FROM users WHERE email_normalized = ${email} LIMIT 1`) as Row[];
       if (!users[0]) return jsonError(res, 404, 'Utilisateur non trouvé. Inscrivez-vous à nouveau.');
       if (users[0].email_verified) return jsonError(res, 409, 'Cette adresse email est déjà vérifiée.');
       const userId = String(users[0].id);
@@ -199,7 +201,7 @@ export default async function handler(req: Req, res: Res) {
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return jsonError(res, 405, 'Méthode non autorisée.'); }
       const password = typeof body.password === 'string' ? body.password : '';
       if (!email || !password) return jsonError(res, 400, 'Adresse email et mot de passe requis.');
-      const rows = await sql`SELECT id, email, email_verified, role, created_at, last_login_at, full_name, password_hash, password_salt, is_active, is_suspended FROM users WHERE email_normalized = ${email} LIMIT 1`;
+      const rows = (await sql`SELECT id, email, email_verified, role, created_at, last_login_at, full_name, password_hash, password_salt, is_active, is_suspended FROM users WHERE email_normalized = ${email} LIMIT 1`) as Row[];
       const user = rows[0];
       if (!user || !user.is_active || user.is_suspended) return jsonError(res, 401, 'Email ou mot de passe incorrect.');
       if (!user.email_verified) return jsonError(res, 403, 'Veuillez vérifier votre adresse email avant de vous connecter.');
