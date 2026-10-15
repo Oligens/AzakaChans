@@ -20,22 +20,58 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 -- ============================================================
 
 -- Type pour les rôles utilisateur
-CREATE TYPE user_role AS ENUM ('USER', 'DISTRIBUTOR', 'ADMIN', 'SUPER_ADMIN');
+DO $type$
+BEGIN
+    CREATE TYPE user_role AS ENUM ('USER', 'DISTRIBUTOR', 'ADMIN', 'SUPER_ADMIN');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$type$;
 
 -- Type pour le statut de vérification email
-CREATE TYPE email_verification_status AS ENUM ('PENDING', 'VERIFIED', 'EXPIRED');
+DO $type$
+BEGIN
+    CREATE TYPE email_verification_status AS ENUM ('PENDING', 'VERIFIED', 'EXPIRED');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$type$;
 
 -- Type pour les méthodes de paiement
-CREATE TYPE payment_method AS ENUM ('MONCASH', 'NATCASH', 'BANK');
+DO $type$
+BEGIN
+    CREATE TYPE payment_method AS ENUM ('MONCASH', 'NATCASH', 'BANK');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$type$;
 
 -- Type pour les statuts de transaction
-CREATE TYPE transaction_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'CANCELLED');
+DO $type$
+BEGIN
+    CREATE TYPE transaction_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'CANCELLED');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$type$;
 
 -- Type pour les statuts de ticket
-CREATE TYPE ticket_status AS ENUM ('CREATED', 'SOLD', 'REVEALED', 'REDEEMED');
+DO $type$
+BEGIN
+    CREATE TYPE ticket_status AS ENUM ('CREATED', 'SOLD', 'REVEALED', 'REDEEMED');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$type$;
 
 -- Type pour les types de ticket
-CREATE TYPE ticket_type AS ENUM ('PHYSICAL', 'VIRTUAL');
+DO $type$
+BEGIN
+    CREATE TYPE ticket_type AS ENUM ('PHYSICAL', 'VIRTUAL');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END
+$type$;
 
 -- ============================================================
 -- TABLE: users
@@ -79,6 +115,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users
     FOR EACH ROW
@@ -149,6 +186,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
 CREATE INDEX IF NOT EXISTS idx_user_profiles_kyc_verified ON user_profiles(kyc_verified);
 
 -- Trigger pour mettre à jour updated_at automatiquement
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at
     BEFORE UPDATE ON user_profiles
     FOR EACH ROW
@@ -183,6 +221,7 @@ CREATE INDEX IF NOT EXISTS idx_wallets_user_id ON wallets(user_id);
 CREATE INDEX IF NOT EXISTS idx_wallets_balance ON wallets(balance);
 
 -- Trigger pour mettre à jour updated_at automatiquement
+DROP TRIGGER IF EXISTS update_wallets_updated_at ON wallets;
 CREATE TRIGGER update_wallets_updated_at
     BEFORE UPDATE ON wallets
     FOR EACH ROW
@@ -411,6 +450,7 @@ CREATE TABLE IF NOT EXISTS jackpot_state (
 );
 
 -- Trigger pour mettre à jour updated_at automatiquement
+DROP TRIGGER IF EXISTS update_jackpot_state_updated_at ON jackpot_state;
 CREATE TRIGGER update_jackpot_state_updated_at
     BEFORE UPDATE ON jackpot_state
     FOR EACH ROW
