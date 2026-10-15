@@ -15,6 +15,20 @@ export interface User {
 }
 export interface AuthState { isAuthenticated: boolean; user: User | null; sessionToken: string | null }
 type AuthResult = { success: boolean; error?: string; userId?: string; user?: User };
+
+// API gateways and database drivers may return structured errors such as
+// { code, message }. Never pass an object to React as renderable text.
+function normalizeError(value: unknown, fallback: string): string {
+  if (typeof value === 'string' && value.trim()) return value;
+  if (value && typeof value === 'object') {
+    const error = value as { message?: unknown; error?: unknown; code?: unknown };
+    if (typeof error.message === 'string' && error.message.trim()) return error.message;
+    if (typeof error.error === 'string' && error.error.trim()) return error.error;
+    if (error.error && typeof error.error === 'object') return normalizeError(error.error, fallback);
+    if (typeof error.code === 'string' && error.code.trim()) return `${fallback} (code: ${error.code})`;
+  }
+  return fallback;
+}
 let currentAuthState: AuthState = { isAuthenticated: false, user: null, sessionToken: null };
 const observers: ((state: AuthState) => void)[] = [];
 let restorePromise: Promise<boolean> | null = null;
@@ -32,9 +46,16 @@ async function request(action: string, body?: Record<string, unknown>): Promise<
       headers: body === undefined ? { Accept: 'application/json' } : { 'Content-Type': 'application/json', Accept: 'application/json' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
-    const result = await response.json().catch(() => ({})) as AuthResult;
-    if (!response.ok) return { success: false, error: result.error || `Erreur serveur (HTTP ${response.status})` };
-    return result;
+    const payload: unknown = await response.json().catch(() => ({}));
+    const result = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
+    const fallback = `Erreur serveur (HTTP ${response.status})`;
+    if (!response.ok) return { success: false, error: normalizeError(result.error ?? result.message, fallback) };
+    return {
+      success: result.success === true,
+      error: result.error === undefined ? undefined : normalizeError(result.error, 'Une erreur est survenue.'),
+      userId: typeof result.userId === 'string' ? result.userId : undefined,
+      user: result.user && typeof result.user === 'object' ? result.user as User : undefined,
+    };
   } catch (error) {
     console.error('Auth request failed:', error);
     return { success: false, error: 'Impossible de contacter le serveur. Vérifiez votre connexion.' };
