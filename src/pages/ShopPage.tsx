@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Lock, ShoppingCart, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { Sparkles, Lock, ShoppingCart, ArrowLeft, AlertCircle } from 'lucide-react';
 
 interface TicketCategory {
   price: number;
@@ -20,18 +20,12 @@ const TICKET_CATEGORIES: TicketCategory[] = [
 export function ShopPage() {
   const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [purchaseNotice, setPurchaseNotice] = useState('');
 
   const handlePurchase = () => {
     if (selectedCategory === null) return;
-    
-    // Simulation d'achat - en production : appel API backend
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      setSelectedCategory(null);
-      setQuantity(1);
-    }, 3000);
+    // Ne jamais afficher un achat réussi tant que l'API transactionnelle n'existe pas.
+    setPurchaseNotice("Achat temporairement indisponible : le paiement et la réservation des tickets doivent être activés côté serveur. Aucun montant n'a été débité.");
   };
 
   const selectedTicket = selectedCategory !== null ? TICKET_CATEGORIES[selectedCategory] : null;
@@ -97,14 +91,10 @@ export function ShopPage() {
           </div>
         </div>
 
-        {/* Success Message */}
-        {showSuccess && (
-          <div className="card-premium p-6 mb-8 flex items-center gap-4" style={{ background: 'rgba(16, 185, 129, 0.1)', borderColor: 'rgba(16, 185, 129, 0.3)' }}>
-            <CheckCircle className="w-8 h-8" style={{ color: '#10B981' }} />
-            <div>
-              <p className="font-bold" style={{ color: '#F5F0E6' }}>Achat réussi !</p>
-              <p className="text-sm" style={{ color: '#AAB7C9' }}>Vos tickets ont été ajoutés à votre portefeuille.</p>
-            </div>
+        {purchaseNotice && (
+          <div role="alert" className="card-premium p-6 mb-8 flex items-start gap-4" style={{ background: 'rgba(245, 158, 11, 0.08)', borderColor: 'rgba(245, 158, 11, 0.35)' }}>
+            <AlertCircle className="w-7 h-7 shrink-0" style={{ color: '#FBBF24' }} />
+            <p style={{ color: '#F5F0E6' }}>{purchaseNotice}</p>
           </div>
         )}
 
@@ -214,7 +204,7 @@ export function ShopPage() {
                   Confirmer l'achat
                 </button>
                 <p className="text-xs text-center mt-4" style={{ color: '#AAB7C9' }}>
-                  Le montant sera déduit de votre portefeuille
+                  Aucun débit ne sera effectué tant que le paiement sécurisé n’est pas disponible
                 </p>
               </div>
             </div>
