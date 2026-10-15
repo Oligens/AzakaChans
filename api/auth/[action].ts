@@ -26,7 +26,9 @@ function getCookie(req: Req, name: string): string | null {
   const raw = Array.isArray(header) ? header[0] : header;
   if (!raw) return null;
   const entry = raw.split(';').map(v => v.trim()).find(v => v.startsWith(name + '='));
-  return entry ? decodeURIComponent(entry.slice(name.length + 1)) : null;
+  if (!entry) return null;
+  try { return decodeURIComponent(entry.slice(name.length + 1)); }
+  catch { return null; }
 }
 function setSessionCookie(res: Res, token: string, maxAge: number) {
   res.setHeader('Set-Cookie', `${COOKIE}=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${maxAge}`);
@@ -58,8 +60,21 @@ async function getSessionUser(sql: ReturnType<typeof neon>, token: string) {
     LIMIT 1
   `;
   if (!rows[0]) return null;
-  // Session validation is intentionally read-only: it must not create profile/wallet
-  // rows on every page load. Those records are initialized during registration/login.
+  const userId = String(rows[0].id);
+
+  // Heal older accounts created before profile/wallet initialization was reliable.
+  // These are idempotent operations; failures are logged but must not turn a valid
+  // session into a 500 and force the user back to the login page.
+  try {
+    await ensureProfileAndWallet(sql, userId);
+    await sql`UPDATE sessions SET last_activity_at = NOW() WHERE token = ${token}`;
+  } catch (error) {
+    const err = error as { message?: string; code?: string };
+    console.error('Session profile/wallet repair failed:', {
+      code: err?.code ?? null,
+      message: err?.message ?? 'unknown error',
+    });
+  }
   return publicUser(rows[0]);
 }
 
