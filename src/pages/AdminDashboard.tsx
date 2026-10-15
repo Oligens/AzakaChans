@@ -1,111 +1,21 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth, logout } from '../services/authService';
-import { Sparkles, LogOut, LayoutDashboard, Ticket, DollarSign, Shield, Database, ArrowDownToLine, RefreshCw, Zap, PieChart, FileText, Activity } from 'lucide-react';
+import { Sparkles, LogOut, LayoutDashboard, Ticket, DollarSign, Shield, Database, ArrowDownToLine, RefreshCw, Zap, PieChart, FileText, Activity, Check, X, CreditCard } from 'lucide-react';
 
-export function AdminDashboard() {
-  const { user } = useAuth();
+type Withdrawal={id:string;user_id:string;email:string;amount:number;method:'MONCASH'|'NATCASH'|'BANK';beneficiary_name:string;destination_phone?:string|null;bank_name?:string|null;bank_account_number?:string|null;status:string;requested_at:string;rejection_reason?:string|null;payment_reference?:string|null};
+const label=(m:string)=>m==='MONCASH'?'MonCash':m==='NATCASH'?'NatCash':'Banque';
 
-  const menuItems = [
-    { id: 'overview', label: 'Vue d\'ensemble', icon: LayoutDashboard },
-    { id: 'jackpot', label: 'Jackpot Itinérant', icon: Sparkles },
-    { id: 'platform', label: 'État Plateforme', icon: Activity },
-    { id: 'series', label: 'Séries & Tickets', icon: Ticket },
-    { id: 'financial', label: 'Moteur Financier', icon: DollarSign },
-    { id: 'ledger', label: 'Registre Comptable', icon: Database },
-    { id: 'withdrawals', label: 'Retraits', icon: ArrowDownToLine },
-    { id: 'claims', label: 'Réclamations', icon: FileText },
-    { id: 'cycles', label: 'Cycles Horaires', icon: RefreshCw },
-    { id: 'tests', label: 'Tests Automatisés', icon: Zap },
-    { id: 'reports', label: 'Rapports', icon: PieChart },
-    { id: 'audit', label: 'Audit & Sécurité', icon: Shield },
-  ];
-
-  const handleLogout = async () => {
-    await logout();
-    window.location.href = '/';
-  };
-
-  return (
-    <div className="min-h-screen flex" style={{ background: 'linear-gradient(135deg, #07162E 0%, #0B1F3A 100%)' }}>
-      {/* Sidebar */}
-      <aside className="w-64 border-r flex flex-col" style={{ borderColor: 'rgba(212, 175, 55, 0.2)', background: 'rgba(11, 31, 58, 0.5)' }}>
-        <div className="p-6 border-b" style={{ borderColor: 'rgba(212, 175, 55, 0.2)' }}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #D4AF37 0%, #F2D675 100%)' }}>
-              <Shield className="w-6 h-6" style={{ color: '#07162E' }} />
-            </div>
-            <div>
-              <h1 className="font-bold" style={{ color: '#F5F0E6' }}>Admin</h1>
-              <p className="text-xs" style={{ color: '#AAB7C9' }}>AZAKA CHANS</p>
-            </div>
-          </div>
-        </div>
-
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {menuItems.map(item => (
-            <button
-              key={item.id}
-              className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition hover:bg-white/5"
-              style={{ color: '#AAB7C9' }}
-            >
-              <item.icon className="w-5 h-5" />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t" style={{ borderColor: 'rgba(212, 175, 55, 0.2)' }}>
-          <div className="mb-3">
-            <p className="text-sm font-medium" style={{ color: '#F5F0E6' }}>{user?.name}</p>
-            <p className="text-xs" style={{ color: '#AAB7C9' }}>{user?.email}</p>
-          </div>
-          <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition hover:bg-white/5" style={{ color: '#AAB7C9' }}>
-            <LogOut className="w-4 h-4" />
-            Déconnexion
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2" style={{ color: '#F5F0E6' }}>Tableau de Bord</h1>
-            <p style={{ color: '#AAB7C9' }}>Bienvenue dans l'espace d'administration</p>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid md:grid-cols-4 gap-6 mb-8">
-            {[
-              { label: 'Recettes Nettes', value: '196 750 HTG', color: '#10B981' },
-              { label: 'Lots Versés', value: '128 000 HTG', color: '#F59E0B' },
-              { label: 'Couverture', value: '83%', color: '#EF4444' },
-              { label: 'Retraits en Attente', value: '2', color: '#3B82F6' },
-            ].map((stat, i) => (
-              <div key={i} className="card-premium p-6">
-                <p className="text-sm mb-2" style={{ color: '#AAB7C9' }}>{stat.label}</p>
-                <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Quick Actions */}
-          <div className="card-premium p-6">
-            <h2 className="text-xl font-bold mb-4" style={{ color: '#F5F0E6' }}>Actions Rapides</h2>
-            <div className="grid md:grid-cols-3 gap-4">
-              <Link to="/gestion-privee/architecture" className="btn-secondary text-center">
-                Architecture Technique
-              </Link>
-              <button className="btn-premium">
-                Nouvelle Série
-              </button>
-              <button className="btn-secondary">
-                Voir les Alertes
-              </button>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
+export function AdminDashboard(){
+ const {user}=useAuth(); const [section,setSection]=useState('overview'); const [rows,setRows]=useState<Withdrawal[]>([]); const [loading,setLoading]=useState(false); const [error,setError]=useState(''); const [actionId,setActionId]=useState(''); const [paymentRef,setPaymentRef]=useState<Record<string,string>>({}); const [notes,setNotes]=useState<Record<string,string>>({});
+ const menuItems=[['overview','Vue d\'ensemble',LayoutDashboard],['jackpot','Jackpot Itinérant',Sparkles],['platform','État Plateforme',Activity],['series','Séries & Tickets',Ticket],['financial','Moteur Financier',DollarSign],['ledger','Registre Comptable',Database],['withdrawals','Retraits',ArrowDownToLine],['claims','Réclamations',FileText],['cycles','Cycles Horaires',RefreshCw],['tests','Tests Automatisés',Zap],['reports','Rapports',PieChart],['audit','Audit & Sécurité',Shield]] as const;
+ const loadWithdrawals=async()=>{setLoading(true);setError('');try{const r=await fetch('/api/admin/withdrawals',{credentials:'include'});const j=await r.json();if(!r.ok||!j.success)throw new Error(j.error||'Impossible de charger les retraits.');setRows(j.withdrawals||[]);}catch(e){setError(e instanceof Error?e.message:'Erreur de chargement.');}finally{setLoading(false);}};
+ useEffect(()=>{if(section==='withdrawals')void loadWithdrawals();},[section]);
+ const act=async(id:string,action:'VALIDATE'|'REJECT'|'MARK_PAID')=>{setActionId(id);setError('');try{const r=await fetch('/api/admin/withdrawals',{method:'PATCH',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,action,notes:notes[id]||'',paymentReference:paymentRef[id]||''})});const j=await r.json();if(!r.ok||!j.success)throw new Error(j.error||'Action impossible.');await loadWithdrawals();}catch(e){setError(e instanceof Error?e.message:'Action impossible.');}finally{setActionId('');}};
+ const handleLogout=async()=>{await logout();window.location.href='/';};
+ return <div className="min-h-screen flex" style={{background:'linear-gradient(135deg,#07162E 0%,#0B1F3A 100%)'}}><aside className="w-64 border-r flex flex-col" style={{borderColor:'rgba(212,175,55,.2)',background:'rgba(11,31,58,.5)'}}><div className="p-6 border-b" style={{borderColor:'rgba(212,175,55,.2)'}}><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{background:'linear-gradient(135deg,#D4AF37,#F2D675)'}}><Shield className="w-6 h-6" style={{color:'#07162E'}}/></div><div><h1 className="font-bold" style={{color:'#F5F0E6'}}>Admin</h1><p className="text-xs" style={{color:'#AAB7C9'}}>AZAKA CHANS</p></div></div></div><nav className="flex-1 p-4 space-y-1 overflow-y-auto">{menuItems.map(([id,text,Icon])=><button key={id} onClick={()=>setSection(id)} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${section===id?'bg-white/10':''}`} style={{color:section===id?'#F5F0E6':'#AAB7C9'}}><Icon className="w-5 h-5"/>{text}</button>)}</nav><div className="p-4 border-t" style={{borderColor:'rgba(212,175,55,.2)'}}><p className="text-sm font-medium" style={{color:'#F5F0E6'}}>{user?.name}</p><p className="text-xs mb-3" style={{color:'#AAB7C9'}}>{user?.email}</p><button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 rounded-lg text-sm" style={{color:'#AAB7C9'}}><LogOut className="w-4 h-4"/>Déconnexion</button></div></aside>
+ <main className="flex-1 overflow-auto"><div className="p-8"><h1 className="text-3xl font-bold mb-2" style={{color:'#F5F0E6'}}>{section==='withdrawals'?'Gestion des retraits':'Tableau de Bord'}</h1><p className="mb-8" style={{color:'#AAB7C9'}}>{section==='withdrawals'?'Demandes sécurisées, validation, refus et paiement.':'Bienvenue dans l’espace d’administration'}</p>
+ {section!=='withdrawals'?<><div className="grid md:grid-cols-4 gap-6 mb-8">{[['Recettes Nettes','196 750 HTG'],['Lots Versés','128 000 HTG'],['Couverture','83%'],['Retraits en Attente',rows.filter(r=>r.status==='PENDING').length.toString()]].map(([a,b],i)=><div key={i} className="card-premium p-6"><p className="text-sm mb-2" style={{color:'#AAB7C9'}}>{a}</p><p className="text-2xl font-bold" style={{color:'#D4AF37'}}>{b}</p></div>)}</div><div className="card-premium p-6"><h2 className="text-xl font-bold mb-4" style={{color:'#F5F0E6'}}>Actions Rapides</h2><div className="grid md:grid-cols-3 gap-4"><Link to="/gestion-privee/architecture" className="btn-secondary text-center">Architecture Technique</Link><button onClick={()=>setSection('withdrawals')} className="btn-premium">Voir les retraits</button><button className="btn-secondary">Voir les alertes</button></div></div></>:
+ <div>{error&&<div className="mb-5 p-4 rounded-lg" style={{background:'rgba(239,68,68,.1)',color:'#EF4444'}}>{error}</div>}{loading?<p style={{color:'#AAB7C9'}}>Chargement des demandes…</p>:rows.length===0?<div className="card-premium p-8" style={{color:'#AAB7C9'}}>Aucune demande de retrait.</div>:<div className="space-y-4">{rows.map(r=><div key={r.id} className="card-premium p-6"><div className="flex flex-wrap justify-between gap-4"><div><p className="text-lg font-bold" style={{color:'#F5F0E6'}}>{r.amount.toLocaleString('fr-FR')} HTG · {label(r.method)}</p><p className="text-sm" style={{color:'#AAB7C9'}}>{r.beneficiary_name} · {r.email}</p><p className="text-xs mt-1" style={{color:'#AAB7C9'}}>{new Date(r.requested_at).toLocaleString('fr-FR')}</p></div><span style={{color:r.status==='REJECTED'?'#EF4444':r.status==='PAID'?'#10B981':'#D4AF37'}}>{r.status}</span></div><div className="mt-5 grid md:grid-cols-2 gap-4 text-sm"><div><p style={{color:'#AAB7C9'}}>Destination</p><p style={{color:'#F5F0E6'}}>{r.method==='BANK'?`${r.bank_name} · ${r.bank_account_number}`:r.destination_phone}</p></div><div><p style={{color:'#AAB7C9'}}>Référence</p><p className="break-all" style={{color:'#F5F0E6'}}>{r.id}</p></div></div>{(r.status==='PENDING'||r.status==='VALIDATED')&&<div className="mt-5 grid md:grid-cols-3 gap-3"><input className="input-premium" placeholder="Notes admin" value={notes[r.id]||''} onChange={e=>setNotes({...notes,[r.id]:e.target.value})}/>{r.status==='VALIDATED'&&<input className="input-premium" placeholder="Référence paiement" value={paymentRef[r.id]||''} onChange={e=>setPaymentRef({...paymentRef,[r.id]:e.target.value})}/>}<div className="flex gap-2">{r.status==='PENDING'&&<button disabled={actionId===r.id} onClick={()=>act(r.id,'VALIDATE')} className="btn-premium flex-1"><Check className="w-4 h-4 inline mr-1"/>Valider</button>}{(r.status==='PENDING'||r.status==='VALIDATED')&&<button disabled={actionId===r.id} onClick={()=>act(r.id,'REJECT')} className="btn-secondary flex-1"><X className="w-4 h-4 inline mr-1"/>Refuser</button>}{r.status==='VALIDATED'&&<button disabled={actionId===r.id||!paymentRef[r.id]} onClick={()=>act(r.id,'MARK_PAID')} className="btn-premium flex-1"><CreditCard className="w-4 h-4 inline mr-1"/>Payé</button>}</div></div>}</div>)}</div>}</div>}
+ </div></main></div>;
 }
