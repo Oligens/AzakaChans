@@ -1,28 +1,24 @@
 /**
- * PRIVATE ROUTE - AZAKA CHANS
- * 
- * Composant de protection des routes privées pour les utilisateurs connectés.
- * Vérifie que l'utilisateur est authentifié avant d'afficher le contenu.
- * Redirige vers la page de connexion si l'utilisateur n'est pas connecté.
+ * Routes privées des joueurs : utiliser la session utilisateur Neon,
+ * et non l'authentification distincte de l'administration.
  */
-
+import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../services/authService';
+import { getAuthState, restoreSession, subscribeToAuth } from '../services/userAuthService';
 
-interface PrivateRouteProps {
-  children: React.ReactNode;
-}
-
+interface PrivateRouteProps { children: React.ReactNode }
 export function PrivateRoute({ children }: PrivateRouteProps) {
-  const { isAuthenticated } = useAuth();
   const location = useLocation();
+  const [auth, setAuth] = useState(getAuthState());
+  const [checking, setChecking] = useState(true);
 
-  // Si l'utilisateur n'est pas connecté, rediriger vers la connexion
-  // avec l'URL de retour pour pouvoir revenir après connexion
-  if (!isAuthenticated) {
-    return <Navigate to="/connexion" state={{ from: location }} replace />;
-  }
+  useEffect(() => {
+    const unsubscribe = subscribeToAuth(state => { setAuth(state); setChecking(false); });
+    restoreSession().finally(() => setChecking(false));
+    return unsubscribe;
+  }, []);
 
-  // L'utilisateur est connecté, afficher le contenu
+  if (checking) return <div className="min-h-screen flex items-center justify-center text-white" style={{ background: '#07162E' }}>Vérification de votre session…</div>;
+  if (!auth.isAuthenticated || !auth.user) return <Navigate to="/connexion" state={{ from: location }} replace />;
   return <>{children}</>;
 }
