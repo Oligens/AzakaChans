@@ -551,6 +551,10 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- Ces ALTER sont additifs et peuvent être exécutés plusieurs fois.
 -- ============================================================
 
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_normalized VARCHAR(255);
+UPDATE users SET email_normalized = LOWER(BTRIM(email)) WHERE email_normalized IS NULL OR email_normalized = '';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_normalized_compat ON users(email_normalized);
+
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT FALSE;
@@ -558,6 +562,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name VARCHAR(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP WITH TIME ZONE;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
 
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS token VARCHAR(255);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_sessions_token_compat ON sessions(token);
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE;
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW();
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS expires_at TIMESTAMP WITH TIME ZONE;
