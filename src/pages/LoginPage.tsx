@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { loginUser } from '../services/userAuthService';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -48,7 +49,8 @@ export function LoginPage() {
 
       if (result.success) {
         // Rediriger vers le tableau de bord ou la page d'accueil
-        navigate('/');
+        const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || '/';
+        navigate(destination, { replace: true });
       } else {
         setGeneralError(result.error || 'Une erreur est survenue lors de la connexion');
       }
