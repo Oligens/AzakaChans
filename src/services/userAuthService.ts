@@ -12,12 +12,11 @@ export interface User {
   createdAt: string;
   lastLoginAt: string | null;
   fullName?: string | null;
+  avatarUrl?: string | null;
 }
 export interface AuthState { isAuthenticated: boolean; user: User | null; sessionToken: string | null }
 type AuthResult = { success: boolean; error?: string; userId?: string; user?: User };
 
-// API gateways and database drivers may return structured errors such as
-// { code, message }. Never pass an object to React as renderable text.
 function normalizeError(value: unknown, fallback: string): string {
   if (typeof value === 'string' && value.trim()) return value;
   if (value && typeof value === 'object') {
@@ -61,21 +60,12 @@ async function request(action: string, body?: Record<string, unknown>): Promise<
     return { success: false, error: 'Impossible de contacter le serveur. Vérifiez votre connexion.' };
   }
 }
-export async function registerUser(email: string, password: string): Promise<AuthResult> {
-  return request('register', { email: email.trim().toLowerCase(), password });
-}
-export async function verifyEmail(email: string, code: string): Promise<AuthResult> {
-  return request('verify', { email: email.trim().toLowerCase(), code });
-}
-export async function resendVerificationCode(email: string): Promise<AuthResult> {
-  return request('resend', { email: email.trim().toLowerCase() });
-}
+export async function registerUser(email: string, password: string): Promise<AuthResult> { return request('register', { email: email.trim().toLowerCase(), password }); }
+export async function verifyEmail(email: string, code: string): Promise<AuthResult> { return request('verify', { email: email.trim().toLowerCase(), code }); }
+export async function resendVerificationCode(email: string): Promise<AuthResult> { return request('resend', { email: email.trim().toLowerCase() }); }
 export async function loginUser(email: string, password: string): Promise<AuthResult> {
   const result = await request('login', { email: email.trim().toLowerCase(), password });
-  if (result.success && result.user) {
-    currentAuthState = { isAuthenticated: true, user: result.user, sessionToken: null };
-    notifyObservers();
-  }
+  if (result.success && result.user) { currentAuthState = { isAuthenticated: true, user: result.user, sessionToken: null }; notifyObservers(); }
   return result;
 }
 export async function logoutUser(): Promise<void> {
