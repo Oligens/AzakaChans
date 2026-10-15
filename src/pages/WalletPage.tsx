@@ -1,132 +1,40 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Wallet, TrendingUp, TrendingDown, ArrowDownToLine, Loader2, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Wallet, TrendingUp, TrendingDown, ArrowDownToLine, Loader2, RefreshCw, Plus, X, Smartphone } from 'lucide-react';
 
 type WalletPayload = {
-  success: boolean;
-  error?: string;
-  wallet?: {
-    balance: number;
-    availableBalance: number;
-    totalDeposits: number;
-    totalWithdrawals: number;
-    totalWinnings: number;
-    reservedAmount: number;
-    currency: string;
-  };
-  transactions?: Array<{
-    id: string;
-    type: string;
-    amount: number;
-    currency: string;
-    description: string;
-    status: string;
-    createdAt: string;
-  }>;
+  success: boolean; error?: string;
+  wallet?: { balance:number; availableBalance:number; totalDeposits:number; totalWithdrawals:number; totalWinnings:number; reservedAmount:number; currency:string };
+  transactions?: Array<{ id:string; type:string; amount:number; currency:string; description:string; status:string; createdAt:string }>;
 };
+type DepositState = { reference:string; amount:number; paymentMethod:'MONCASH'|'NATCASH'; status:string; merchantWallet?: { moncashName?:string; moncashPhone?:string; natcashName?:string; natcashPhone?:string }|null };
 
 export function WalletPage() {
-  const [data, setData] = useState<WalletPayload | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [data,setData]=useState<WalletPayload|null>(null); const [loading,setLoading]=useState(true); const [error,setError]=useState('');
+  const [showDeposit,setShowDeposit]=useState(false); const [amount,setAmount]=useState(''); const [phone,setPhone]=useState(''); const [method,setMethod]=useState<'MONCASH'|'NATCASH'>('MONCASH'); const [deposit,setDeposit]=useState<DepositState|null>(null); const [depositLoading,setDepositLoading]=useState(false); const [depositError,setDepositError]=useState('');
+  const pollRef=useRef<ReturnType<typeof setInterval>|null>(null);
 
-  const loadWallet = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const response = await fetch('/api/user/wallet', {
-        method: 'GET',
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-        cache: 'no-store',
-      });
-      const payload = await response.json() as WalletPayload;
-      if (!response.ok || !payload.success || !payload.wallet) {
-        throw new Error(payload.error || 'Impossible de charger le portefeuille.');
-      }
-      setData(payload);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur lors du chargement du portefeuille.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const loadWallet=async()=>{setLoading(true);setError('');try{const r=await fetch('/api/user/wallet',{credentials:'same-origin',headers:{Accept:'application/json'},cache:'no-store'});const p=await r.json() as WalletPayload;if(!r.ok||!p.success||!p.wallet)throw new Error(p.error||'Impossible de charger le portefeuille.');setData(p);}catch(e){setError(e instanceof Error?e.message:'Erreur lors du chargement du portefeuille.');}finally{setLoading(false);}};
+  useEffect(()=>{void loadWallet(); return()=>{if(pollRef.current)clearInterval(pollRef.current);};},[]);
 
-  useEffect(() => { void loadWallet(); }, []);
+  const startDeposit=async()=>{setDepositError('');setDepositLoading(true);try{const numeric=Number(amount);const r=await fetch('/api/user/deposit',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({amount:numeric,phone,method})});const p=await r.json();if(!r.ok||!p.success)throw new Error(p.error||'Impossible de préparer le dépôt.');const next:DepositState={reference:p.deposit.reference,amount:Number(p.deposit.amount),paymentMethod:p.deposit.paymentMethod,status:p.deposit.status,merchantWallet:p.merchantWallet};setDeposit(next);if(pollRef.current)clearInterval(pollRef.current);pollRef.current=setInterval(async()=>{try{const s=await fetch(`/api/user/deposit?reference=${encodeURIComponent(next.reference)}`,{credentials:'same-origin',cache:'no-store'});const q=await s.json();if(q.success&&q.deposit){setDeposit(d=>d?{...d,status:q.deposit.status}:d);if(q.deposit.status==='COMPLETED'){if(pollRef.current)clearInterval(pollRef.current);await loadWallet();}if(q.deposit.status==='FAILED'){if(pollRef.current)clearInterval(pollRef.current);}}}catch{}},5000);}catch(e){setDepositError(e instanceof Error?e.message:'Impossible de préparer le dépôt.');}finally{setDepositLoading(false);}};
+  const closeDeposit=()=>{if(pollRef.current)clearInterval(pollRef.current);setShowDeposit(false);setDeposit(null);setDepositError('');};
+  const wallet=data?.wallet; const transactions=data?.transactions??[];
+  const merchantPhone=deposit?.merchantWallet?.[deposit.paymentMethod==='MONCASH'?'moncashPhone':'natcashPhone']||''; const merchantName=deposit?.merchantWallet?.[deposit.paymentMethod==='MONCASH'?'moncashName':'natcashName']||'';
 
-  const wallet = data?.wallet;
-  const transactions = data?.transactions ?? [];
+  return <div className="min-h-screen" style={{background:'linear-gradient(135deg,#07162E 0%,#0B1F3A 100%)'}}><div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="flex items-center justify-between gap-4 mb-6"><Link to="/" className="inline-flex items-center gap-2 text-sm hover:opacity-80 transition" style={{color:'#AAB7C9'}}><ArrowLeft className="w-4 h-4"/> Retour à l'accueil</Link><button onClick={()=>void loadWallet()} disabled={loading} className="btn-secondary inline-flex items-center gap-2 text-sm"><RefreshCw className={`w-4 h-4 ${loading?'animate-spin':''}`}/> Actualiser</button></div>
+    <div className="flex flex-wrap items-center justify-between gap-4 mb-8"><h1 className="text-4xl font-bold" style={{color:'#F5F0E6'}}>Mon Portefeuille</h1><button onClick={()=>{setShowDeposit(true);setDepositError('');}} className="btn-premium inline-flex items-center gap-2"><Plus className="w-5 h-5"/> Ajouter des fonds</button></div>
+    {error&&<div role="alert" className="rounded-xl border p-4 mb-6" style={{color:'#FCA5A5',borderColor:'rgba(239,68,68,.4)',background:'rgba(239,68,68,.08)'}}>{error}</div>}
+    {loading&&!data?<div className="flex items-center justify-center gap-3 py-20" style={{color:'#AAB7C9'}}><Loader2 className="w-6 h-6 animate-spin"/> Chargement des données sécurisées…</div>:wallet?<>
+      <div className="card-premium p-8 mb-8" style={{background:'linear-gradient(135deg,rgba(212,175,55,.1) 0%,rgba(242,214,117,.1) 100%)',borderColor:'rgba(212,175,55,.3)'}}><div className="flex items-center gap-4 mb-4"><Wallet className="w-12 h-12" style={{color:'#D4AF37'}}/><div><p className="text-sm" style={{color:'#AAB7C9'}}>Solde disponible</p><p className="text-4xl font-bold" style={{color:'#F5F0E6'}}>{wallet.availableBalance.toLocaleString()} {wallet.currency}</p><p className="text-xs mt-2" style={{color:'#AAB7C9'}}>Solde total : {wallet.balance.toLocaleString()} {wallet.currency}</p></div></div><div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6"><div><p className="text-xs" style={{color:'#AAB7C9'}}>Dépôts</p><p className="text-lg font-bold text-green-500">{wallet.totalDeposits.toLocaleString()} HTG</p></div><div><p className="text-xs" style={{color:'#AAB7C9'}}>Gains</p><p className="text-lg font-bold text-green-500">{wallet.totalWinnings.toLocaleString()} HTG</p></div><div><p className="text-xs" style={{color:'#AAB7C9'}}>Retraits</p><p className="text-lg font-bold text-red-500">{wallet.totalWithdrawals.toLocaleString()} HTG</p></div></div></div>
+      <div className="grid md:grid-cols-2 gap-4 mb-8"><button onClick={()=>{setShowDeposit(true);setDepositError('');}} className="btn-premium flex items-center justify-center gap-2"><Plus className="w-5 h-5"/> Ajouter des fonds</button><Link to="/retrait" className="btn-secondary flex items-center justify-center gap-2"><ArrowDownToLine className="w-5 h-5"/> Retirer</Link></div>
+      <div className="card-premium p-6"><h2 className="text-xl font-bold mb-4" style={{color:'#F5F0E6'}}>Historique des transactions</h2>{transactions.length===0?<p className="py-8 text-center" style={{color:'#AAB7C9'}}>Aucune transaction enregistrée pour le moment.</p>:<div className="space-y-3">{transactions.map(tx=>{const positive=['DEPOSIT','WIN_CREDIT','REFUND'].includes(tx.type);return <div key={tx.id} className="flex items-center justify-between gap-4 p-4 rounded-lg" style={{background:'rgba(11,31,58,.5)'}}><div className="flex items-center gap-3 min-w-0">{positive?<TrendingUp className="w-5 h-5 shrink-0 text-green-500"/>:<TrendingDown className="w-5 h-5 shrink-0 text-red-500"/>}<div className="min-w-0"><p className="font-medium truncate" style={{color:'#F5F0E6'}}>{tx.description}</p><p className="text-xs" style={{color:'#AAB7C9'}}>{new Date(tx.createdAt).toLocaleString()} · {tx.status}</p></div></div><p className={`font-bold whitespace-nowrap ${positive?'text-green-500':'text-red-500'}`}>{positive?'+':'−'}{tx.amount.toLocaleString()} {tx.currency}</p></div>;})}</div>}</div>
+    </>:null}
 
-  return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #07162E 0%, #0B1F3A 100%)' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="flex items-center justify-between gap-4 mb-6">
-          <Link to="/" className="inline-flex items-center gap-2 text-sm hover:opacity-80 transition" style={{ color: '#AAB7C9' }}>
-            <ArrowLeft className="w-4 h-4" /> Retour à l'accueil
-          </Link>
-          <button onClick={() => void loadWallet()} disabled={loading} className="btn-secondary inline-flex items-center gap-2 text-sm">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Actualiser
-          </button>
-        </div>
-
-        <h1 className="text-4xl font-bold mb-8" style={{ color: '#F5F0E6' }}>Mon Portefeuille</h1>
-
-        {error && (
-          <div role="alert" className="rounded-xl border p-4 mb-6" style={{ color: '#FCA5A5', borderColor: 'rgba(239,68,68,.4)', background: 'rgba(239,68,68,.08)' }}>
-            {error}
-            {error.toLowerCase().includes('schéma neon') && <p className="mt-2 text-sm">Exécutez le fichier <code>database/neon_schema.sql</code> dans le SQL Editor de votre projet Neon.</p>}
-          </div>
-        )}
-
-        {loading && !data ? (
-          <div className="flex items-center justify-center gap-3 py-20" style={{ color: '#AAB7C9' }}>
-            <Loader2 className="w-6 h-6 animate-spin" /> Chargement des données sécurisées…
-          </div>
-        ) : wallet ? (
-          <>
-            <div className="card-premium p-8 mb-8" style={{ background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(242, 214, 117, 0.1) 100%)', borderColor: 'rgba(212, 175, 55, 0.3)' }}>
-              <div className="flex items-center gap-4 mb-4">
-                <Wallet className="w-12 h-12" style={{ color: '#D4AF37' }} />
-                <div>
-                  <p className="text-sm" style={{ color: '#AAB7C9' }}>Solde disponible</p>
-                  <p className="text-4xl font-bold" style={{ color: '#F5F0E6' }}>{wallet.availableBalance.toLocaleString()} {wallet.currency}</p>
-                  <p className="text-xs mt-2" style={{ color: '#AAB7C9' }}>Solde total : {wallet.balance.toLocaleString()} {wallet.currency}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
-                <div><p className="text-xs" style={{ color: '#AAB7C9' }}>Dépôts</p><p className="text-lg font-bold" style={{ color: '#10B981' }}>{wallet.totalDeposits.toLocaleString()} HTG</p></div>
-                <div><p className="text-xs" style={{ color: '#AAB7C9' }}>Gains</p><p className="text-lg font-bold" style={{ color: '#10B981' }}>{wallet.totalWinnings.toLocaleString()} HTG</p></div>
-                <div><p className="text-xs" style={{ color: '#AAB7C9' }}>Retraits</p><p className="text-lg font-bold" style={{ color: '#EF4444' }}>{wallet.totalWithdrawals.toLocaleString()} HTG</p></div>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4 mb-8">
-              <Link to="/retrait" className="btn-premium flex items-center justify-center gap-2"><ArrowDownToLine className="w-5 h-5" /> Retirer</Link>
-              <Link to="/boutique" className="btn-secondary flex items-center justify-center gap-2"><Wallet className="w-5 h-5" /> Acheter des tickets</Link>
-            </div>
-
-            <div className="card-premium p-6">
-              <h2 className="text-xl font-bold mb-4" style={{ color: '#F5F0E6' }}>Historique des transactions</h2>
-              {transactions.length === 0 ? (
-                <p className="py-8 text-center" style={{ color: '#AAB7C9' }}>Aucune transaction enregistrée pour le moment.</p>
-              ) : (
-                <div className="space-y-3">
-                  {transactions.map(tx => {
-                    const positive = ['DEPOSIT', 'WIN_CREDIT', 'REFUND'].includes(tx.type);
-                    return <div key={tx.id} className="flex items-center justify-between gap-4 p-4 rounded-lg" style={{ background: 'rgba(11, 31, 58, 0.5)' }}>
-                      <div className="flex items-center gap-3 min-w-0">
-                        {positive ? <TrendingUp className="w-5 h-5 shrink-0" style={{ color: '#10B981' }} /> : <TrendingDown className="w-5 h-5 shrink-0" style={{ color: '#EF4444' }} />}
-                        <div className="min-w-0"><p className="font-medium truncate" style={{ color: '#F5F0E6' }}>{tx.description}</p><p className="text-xs" style={{ color: '#AAB7C9' }}>{new Date(tx.createdAt).toLocaleString()} · {tx.status}</p></div>
-                      </div>
-                      <p className={`font-bold whitespace-nowrap ${positive ? 'text-green-500' : 'text-red-500'}`}>{positive ? '+' : '−'}{tx.amount.toLocaleString()} {tx.currency}</p>
-                    </div>;
-                  })}
-                </div>
-              )}
-            </div>
-          </>
-        ) : null}
-      </div>
-    </div>
-  );
+    {showDeposit&&<div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4"><div className="w-full max-w-lg card-premium p-6 relative"><button onClick={closeDeposit} className="absolute right-4 top-4 text-fog hover:text-snow"><X className="w-5 h-5"/></button><div className="flex items-center gap-3 mb-6"><Smartphone className="w-8 h-8 text-gold"/><div><h2 className="text-2xl font-bold" style={{color:'#F5F0E6'}}>Ajouter des fonds</h2><p className="text-sm" style={{color:'#AAB7C9'}}>Paiement sécurisé via ZakaPro</p></div></div>
+      {!deposit?<><label className="block text-sm mb-2" style={{color:'#AAB7C9'}}>Montant (HTG)</label><input value={amount} onChange={e=>setAmount(e.target.value)} type="number" min="50" step="1" className="w-full rounded-lg bg-white/5 border border-white/10 px-4 py-3 text-snow mb-4" placeholder="500"/><label className="block text-sm mb-2" style={{color:'#AAB7C9'}}>Votre numéro MonCash/NatCash</label><input value={phone} onChange={e=>setPhone(e.target.value)} inputMode="tel" className="w-full rounded-lg bg-white/5 border border-white/10 px-4 py-3 text-snow mb-4" placeholder="37123456"/><label className="block text-sm mb-2" style={{color:'#AAB7C9'}}>Méthode</label><div className="grid grid-cols-2 gap-3 mb-5"><button onClick={()=>setMethod('MONCASH')} className={`rounded-lg py-3 font-bold ${method==='MONCASH'?'bg-blue-600 text-white':'bg-white/5 text-fog'}`}>MonCash</button><button onClick={()=>setMethod('NATCASH')} className={`rounded-lg py-3 font-bold ${method==='NATCASH'?'bg-violet-600 text-white':'bg-white/5 text-fog'}`}>NatCash</button></div>{depositError&&<p className="text-sm text-red-400 mb-4">{depositError}</p>}<button disabled={depositLoading} onClick={()=>void startDeposit()} className="btn-premium w-full py-3">{depositLoading?<><Loader2 className="inline w-4 h-4 animate-spin mr-2"/>Préparation…</>:'Continuer avec ZakaPro'}</button></>
+      :<div className="space-y-4"><div className={`rounded-xl border p-4 ${deposit.status==='COMPLETED'?'border-green-500/40 bg-green-500/10':'border-gold/30 bg-gold/5'}`}><p className="text-sm font-bold" style={{color:'#D4AF37'}}>{deposit.status==='COMPLETED'?'Dépôt confirmé':'Paiement en attente'}</p><p className="mt-2 text-sm" style={{color:'#F5F0E6'}}>Montant : <b>{deposit.amount.toLocaleString()} HTG</b></p><p className="text-sm" style={{color:'#F5F0E6'}}>Référence : <code className="text-gold">{deposit.reference}</code></p></div>{deposit.status!=='COMPLETED'&&<div className="rounded-xl border border-white/10 bg-white/5 p-4"><p className="text-sm font-bold" style={{color:'#F5F0E6'}}>Effectuez le paiement</p><p className="text-sm mt-2" style={{color:'#AAB7C9'}}>Envoyez exactement <b className="text-snow">{deposit.amount.toLocaleString()} HTG</b> via {deposit.paymentMethod==='MONCASH'?'MonCash':'NatCash'}.</p>{merchantPhone&&<p className="mt-2 text-sm" style={{color:'#F5F0E6'}}>Numéro marchand : <b>{merchantPhone}</b>{merchantName?` — ${merchantName}`:''}</p>}<p className="mt-2 text-xs" style={{color:'#AAB7C9'}}>La référence doit être conservée. Le portefeuille sera crédité uniquement après confirmation réelle par ZakaPro.</p></div>}<button onClick={()=>void loadWallet()} className="btn-secondary w-full">Actualiser le portefeuille</button><button onClick={closeDeposit} className="w-full rounded-lg border border-white/10 py-2 text-sm" style={{color:'#AAB7C9'}}>Fermer</button></div>}
+    </div></div>}
+  </div></div>;
 }
