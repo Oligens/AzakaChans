@@ -3,7 +3,7 @@ import { createHash, randomBytes, scrypt as scryptCallback, timingSafeEqual } fr
 import { promisify } from 'node:util';
 
 const scrypt = promisify(scryptCallback);
-type Req = { method?: string; body?: any; headers: Record<string, string | string[] | undefined>; url?: string };
+type Req = { method?: string; body?: any; headers: Record<string, string | string[] | undefined>; url?: string; query?: Record<string, string | string[] | undefined> };
 type Res = { setHeader(name: string, value: string | string[]): void; status(code: number): Res; json(body: any): void; end(): void };
 type Sql = NeonQueryFunction<false, false>;
 type Row = Record<string, any>;
@@ -63,32 +63,36 @@ async function getSessionUser(sql: Sql, token: string) {
   `) as Row[];
   if (!rows[0]) return null;
   const userId = String(rows[0].id);
-
-  // Heal older accounts created before profile/wallet initialization was reliable.
-  // These are idempotent operations; failures are logged but must not turn a valid
-  // session into a 500 and force the user back to the login page.
   try {
     await ensureProfileAndWallet(sql, userId);
     await sql`UPDATE sessions SET last_activity_at = NOW() WHERE token = ${token}`;
   } catch (error) {
     const err = error as { message?: string; code?: string };
-    console.error('Session profile/wallet repair failed:', {
-      code: err?.code ?? null,
-      message: err?.message ?? 'unknown error',
-    });
+    console.error('Session profile/wallet repair failed:', { code: err?.code ?? null, message: err?.message ?? 'unknown error' });
   }
   return publicUser(rows[0]);
+}
+
+function getAction(req: Req): string {
+  const queryAction = req.query?.action;
+  const fromQuery = Array.isArray(queryAction) ? queryAction[0] : queryAction;
+  if (fromQuery && fromQuery !== '[action]') return String(fromQuery).trim().toLowerCase();
+  const path = (req.url || '').split('?')[0].split('/').filter(Boolean);
+  const last = path[path.length - 1] || '';
+  if (last && last !== '[action]') return last.toLowerCase();
+  const rawQuery = (req.url || '').split('?')[1] || '';
+  const params = new URLSearchParams(rawQuery);
+  const fallback = params.get('action');
+  return fallback ? fallback.trim().toLowerCase() : '';
 }
 
 export default async function handler(req: Req, res: Res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  const action = (req.url || '').split('?')[0].split('/').filter(Boolean).pop() || '';
+  const action = getAction(req);
   const body = req.body && typeof req.body === 'object' ? req.body : {};
   const email = normalizeEmail(body.email);
 
-  // A visitor without a session is simply logged out; do not make the initial
-  // session check depend on Neon being configured or reachable.
   if (action === 'session' && req.method === 'GET' && !getCookie(req, COOKIE)) {
     return res.status(200).json({ success: true, user: null });
   }
@@ -98,7 +102,7 @@ export default async function handler(req: Req, res: Res) {
 
   try {
     const sql: Sql = neon(databaseUrl);
-    if (action === 'session' || action === '[action]') {
+    if (action === 'session') {
       if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); return jsonError(res, 405, 'Méthode non autorisée.'); }
       const token = getCookie(req, COOKIE);
       if (!token) return res.status(200).json({ success: true, user: null });
@@ -127,25 +131,14 @@ export default async function handler(req: Req, res: Res) {
       const code = randomBytes(4).readUInt32BE(0) % 900000 + 100000;
       const verificationCode = String(code);
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      const inserted = (await sql`
-        INSERT INTO users (email, email_normalized, password_hash, password_salt, role, email_verified)
-        VALUES (${email}, ${email}, ${passwordHash}, ${salt}, 'USER', FALSE)
-        RETURNING id, email
-      `) as Row[];
+      const inserted = (await sql`INSERT INTO users (email, email_normalized, password_hash, password_salt, role, email_verified) VALUES (${email}, ${email}, ${passwordHash}, ${salt}, 'USER', FALSE) RETURNING id, email`) as Row[];
       const userId = String(inserted[0].id);
       await ensureProfileAndWallet(sql, userId);
       await sql`UPDATE email_verifications SET status = 'EXPIRED', invalidated_at = NOW() WHERE user_id = ${userId}::uuid AND status = 'PENDING'`;
-      await sql`
-        INSERT INTO email_verifications (user_id, verification_code, code_hash, status, expires_at)
-        VALUES (${userId}::uuid, ${verificationCode}, ${hashCode(verificationCode)}, 'PENDING', ${expiresAt}::timestamptz)
-      `;
+      await sql`INSERT INTO email_verifications (user_id, verification_code, code_hash, status, expires_at) VALUES (${userId}::uuid, ${verificationCode}, ${hashCode(verificationCode)}, 'PENDING', ${expiresAt}::timestamptz)`;
       const host = Array.isArray(req.headers.host) ? req.headers.host[0] : req.headers.host;
       const protocol = (Array.isArray(req.headers['x-forwarded-proto']) ? req.headers['x-forwarded-proto'][0] : req.headers['x-forwarded-proto']) || 'https';
-      const mailResponse = await fetch(`${protocol}://${host}/api/auth/send-verification-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: verificationCode }),
-      }).catch(() => null);
+      const mailResponse = await fetch(`${protocol}://${host}/api/auth/send-verification-email`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, code: verificationCode }) }).catch(() => null);
       if (!mailResponse?.ok) {
         await sql`DELETE FROM users WHERE id = ${userId}::uuid AND email_verified = FALSE`;
         return jsonError(res, 502, 'Impossible d’envoyer le code de vérification. Vérifiez la configuration SMTP du serveur.');
@@ -157,12 +150,7 @@ export default async function handler(req: Req, res: Res) {
       if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return jsonError(res, 405, 'Méthode non autorisée.'); }
       const code = typeof body.code === 'string' ? body.code.trim() : '';
       if (!email || !/^\d{6}$/.test(code)) return jsonError(res, 400, 'Email et code à 6 chiffres requis.');
-      const rows = (await sql`
-        SELECT ev.id AS verification_id, ev.user_id, ev.attempts, ev.max_attempts, ev.expires_at, ev.code_hash, ev.verification_code
-        FROM email_verifications ev JOIN users u ON u.id = ev.user_id
-        WHERE u.email_normalized = ${email} AND ev.status = 'PENDING'
-        ORDER BY ev.created_at DESC LIMIT 1
-      `) as Row[];
+      const rows = (await sql`SELECT ev.id AS verification_id, ev.user_id, ev.attempts, ev.max_attempts, ev.expires_at, ev.code_hash, ev.verification_code FROM email_verifications ev JOIN users u ON u.id = ev.user_id WHERE u.email_normalized = ${email} AND ev.status = 'PENDING' ORDER BY ev.created_at DESC LIMIT 1`) as Row[];
       const verification = rows[0];
       if (!verification) return jsonError(res, 404, 'Aucune vérification active pour cette adresse. Réinscrivez-vous ou demandez un nouveau code.');
       if (new Date(String(verification.expires_at)).getTime() < Date.now()) {
@@ -219,14 +207,8 @@ export default async function handler(req: Req, res: Res) {
 
     return jsonError(res, 404, 'Route d’authentification inconnue.');
   } catch (error) {
-    // Log diagnostic details for Vercel without returning internals to the browser.
     const err = error as { message?: string; code?: string; stack?: string };
-    console.error('Auth API error:', {
-      action,
-      code: err?.code ?? null,
-      message: err?.message ?? 'unknown error',
-      stack: err?.stack ?? null,
-    });
+    console.error('Auth API error:', { action, code: err?.code ?? null, message: err?.message ?? 'unknown error', stack: err?.stack ?? null });
     return jsonError(res, 500, 'Erreur serveur pendant l’authentification. Vérifiez la configuration Neon et les migrations.');
   }
 }
