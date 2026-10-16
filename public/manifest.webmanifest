@@ -1,14 +1,14 @@
 {
   "id": "/",
-  "name": "AZAKA CHANS - Loterie Haïtienne",
-  "short_name": "AZAKA CHANS",
-  "description": "La loterie haïtienne nouvelle génération. Rasin nou. Chans nou.",
+  "name": "AZAKA",
+  "short_name": "AZAKA",
+  "description": "AZAKA — la plateforme de loterie haïtienne nouvelle génération. Rasin nou. Chans nou.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#07162E",
-  "theme_color": "#D4AF37",
+  "theme_color": "#0B4BC4",
   "lang": "fr",
   "categories": ["entertainment", "finance"],
   "icons": [
@@ -30,19 +30,10 @@
     "action": "/share",
     "method": "GET",
     "enctype": "application/x-www-form-urlencoded",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
+    "params": { "title": "title", "text": "text", "url": "url" }
   },
   "protocol_handlers": [
-    {
-      "protocol": "web+azaka",
-      "url": "/handle?data=%s"
-    }
+    { "protocol": "web+azaka", "url": "/handle?data=%s" }
   ],
-  "edge_side_panel": {
-    "preferred_width": 400
-  }
+  "edge_side_panel": { "preferred_width": 400 }
 }
