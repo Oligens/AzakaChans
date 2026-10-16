@@ -3,46 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <title>AZAKA CHANS - Rasin nou. Chans nou.</title>
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="AZAKA CHANS - La loterie haïtienne nouvelle génération. Achetez des tickets, révélez vos gains, retirez via MonCash ou NatCash. Sécurité, transparence et fierté culturelle." />
-    <meta name="keywords" content="loterie, Haïti, AZAKA CHANS, tickets, gains, MonCash, NatCash, jackpot" />
-    <meta name="author" content="AZAKA CHANS" />
-    
-    <!-- Open Graph / Facebook -->
+    <title>AZAKA - Loterie haïtienne nouvelle génération</title>
+
+    <meta name="description" content="AZAKA - La plateforme de loterie haïtienne nouvelle génération. Sécurité, transparence et fierté culturelle." />
+    <meta name="keywords" content="loterie, Haïti, AZAKA, tickets, gains, MonCash, NatCash, jackpot" />
+    <meta name="author" content="AZAKA" />
+
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://azaka-chans.vercel.app/" />
-    <meta property="og:title" content="AZAKA CHANS - Rasin nou. Chans nou." />
-    <meta property="og:description" content="La loterie haïtienne nouvelle génération. Achetez des tickets, révélez vos gains, retirez via MonCash ou NatCash." />
-    <meta property="og:image" content="https://azaka-chans.vercel.app/icons/icon-512x512.png" />
-    
-    <!-- Twitter -->
+    <meta property="og:title" content="AZAKA - Loterie haïtienne nouvelle génération" />
+    <meta property="og:description" content="La plateforme de loterie haïtienne nouvelle génération. Sécurité, transparence et fierté culturelle." />
+    <meta property="og:image" content="https://azaka-chans.vercel.app/icons/icon.svg" />
+
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://azaka-chans.vercel.app/" />
-    <meta property="twitter:title" content="AZAKA CHANS - Rasin nou. Chans nou." />
-    <meta property="twitter:description" content="La loterie haïtienne nouvelle génération." />
-    <meta property="twitter:image" content="https://azaka-chans.vercel.app/icons/icon-512x512.png" />
-    
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#D4AF37" />
+    <meta property="twitter:title" content="AZAKA - Loterie haïtienne nouvelle génération" />
+    <meta property="twitter:description" content="La plateforme de loterie haïtienne nouvelle génération." />
+    <meta property="twitter:image" content="https://azaka-chans.vercel.app/icons/icon.svg" />
+
+    <meta name="theme-color" content="#0B4BC4" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="AZAKA CHANS" />
+    <meta name="apple-mobile-web-app-title" content="AZAKA" />
     <meta name="mobile-web-app-capable" content="yes" />
-    
-    <!-- PWA Manifest -->
+
     <link rel="manifest" href="/manifest.webmanifest" />
-    
-    <!-- PWA Icons -->
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
-    
-    <!-- Fonts -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-    
-    <!-- Styles inline pour le chargement initial -->
+
     <style>
       html, body {
         margin: 0;
@@ -55,15 +46,10 @@
         background: linear-gradient(135deg, #07162E 0%, #0B1F3A 100%);
         color: #F5F0E6;
       }
-      
-      /* Splash screen pendant le chargement */
       #splash-screen {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(135deg, #07162E 0%, #0B1F3A 100%);
+        inset: 0;
+        background: #fff;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -71,65 +57,33 @@
         z-index: 9999;
         transition: opacity 0.5s ease-out;
       }
-      #splash-screen.hidden {
-        opacity: 0;
-        pointer-events: none;
-      }
+      #splash-screen.hidden { opacity: 0; pointer-events: none; }
       #splash-screen .logo {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, #D4AF37 0%, #F2D675 100%);
-        border-radius: 20px;
+        width: 110px;
+        height: 110px;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 20px;
+        margin-bottom: 18px;
         animation: pulse 2s infinite;
       }
-      #splash-screen .logo svg {
-        width: 40px;
-        height: 40px;
-        color: #07162E;
-      }
-      #splash-screen h1 {
-        font-size: 24px;
-        font-weight: bold;
-        color: #F5F0E6;
-        margin: 0;
-      }
-      #splash-screen p {
-        font-size: 14px;
-        color: #D4AF37;
-        margin-top: 8px;
-        font-style: italic;
-      }
-      @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-      }
+      #splash-screen .logo img { width: 100%; height: 100%; object-fit: contain; }
+      #splash-screen h1 { font-size: 28px; font-weight: 800; color: #123FA8; margin: 0; letter-spacing: .16em; }
+      #splash-screen p { font-size: 13px; color: #5D6B82; margin-top: 8px; }
+      @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.04); } }
     </style>
   </head>
   <body>
-    <!-- Splash Screen -->
     <div id="splash-screen">
-      <div class="logo">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-        </svg>
-      </div>
-      <h1>AZAKA CHANS</h1>
+      <div class="logo"><img src="/icons/icon.svg" alt="AZAKA" /></div>
+      <h1>AZAKA</h1>
       <p>Rasin nou. Chans nou.</p>
     </div>
-    
-    <!-- Application Root -->
+
     <div id="root"></div>
-    
-    <!-- Application Script -->
     <script type="module" src="/src/main.tsx"></script>
-    
-    <!-- Service Worker Registration -->
+
     <script>
-      // Masquer le splash screen après chargement
       window.addEventListener('load', () => {
         setTimeout(() => {
           const splash = document.getElementById('splash-screen');
@@ -139,57 +93,29 @@
           }
         }, 1000);
       });
-      
-      // Enregistrer le Service Worker
+
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((registration) => {
-              console.log('[PWA] Service Worker enregistré avec succès:', registration.scope);
-              
-              // Vérifier les mises à jour
-              registration.addEventListener('updatefound', () => {
-                const newWorker = registration.installing;
-                console.log('[PWA] Nouvelle version du Service Worker trouvée');
-                
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    // Nouvelle version disponible
-                    console.log('[PWA] Nouvelle version prête à être activée');
-                    // Ici vous pouvez afficher une notification à l'utilisateur
-                  }
-                });
-              });
-            })
-            .catch((error) => {
-              console.log('[PWA] Erreur lors de l\'enregistrement du Service Worker:', error);
-            });
+          navigator.serviceWorker.register('/sw.js').catch((error) => {
+            console.log('[PWA] Erreur lors de l\'enregistrement du Service Worker:', error);
+          });
         });
       }
-      
-      // Gestionnaire d'installation PWA
+
       let deferredPrompt;
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         deferredPrompt = e;
-        console.log('[PWA] Installation disponible');
-        // Vous pouvez afficher un bouton d'installation personnalisé ici
       });
-      
-      // Fonction pour installer l'application (à appeler depuis un bouton)
       window.installPWA = async () => {
         if (deferredPrompt) {
           deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          console.log(`[PWA] Installation: ${outcome}`);
+          await deferredPrompt.userChoice;
           deferredPrompt = null;
         }
       };
-      
-      // Détecter le mode standalone
       window.addEventListener('load', () => {
         if (window.matchMedia('(display-mode: standalone)').matches) {
-          console.log('[PWA] Application lancée en mode standalone');
           document.body.classList.add('standalone');
         }
       });
