@@ -1,5 +1,5 @@
 /**
- * Authentification utilisateur AZAKA CHANS.
+ * Authentification utilisateur AZAKA.
  * Les comptes, profils, portefeuilles et sessions sont conservés dans Neon.
  * Le cookie de session est HttpOnly : aucun token d'authentification dans localStorage.
  */
@@ -28,22 +28,28 @@ function normalizeError(value: unknown, fallback: string): string {
   }
   return fallback;
 }
+
 let currentAuthState: AuthState = { isAuthenticated: false, user: null, sessionToken: null };
 const observers: ((state: AuthState) => void)[] = [];
 let restorePromise: Promise<boolean> | null = null;
+
 function notifyObservers() { observers.forEach(observer => observer(currentAuthState)); }
 export function subscribeToAuth(observer: (state: AuthState) => void): () => void {
   observers.push(observer);
   return () => { const index = observers.indexOf(observer); if (index >= 0) observers.splice(index, 1); };
 }
 export function getAuthState(): AuthState { return currentAuthState; }
+
 async function request(action: string, body?: Record<string, unknown>): Promise<AuthResult> {
   try {
-    const response = await fetch(`/api/auth/${action}`, {
+    const response = await fetch(`/api/auth?action=${encodeURIComponent(action)}`, {
       method: body === undefined ? 'GET' : 'POST',
       credentials: 'same-origin',
-      headers: body === undefined ? { Accept: 'application/json' } : { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: body === undefined
+        ? { Accept: 'application/json' }
+        : { 'Content-Type': 'application/json', Accept: 'application/json' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      cache: 'no-store',
     });
     const payload: unknown = await response.json().catch(() => ({}));
     const result = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
@@ -60,12 +66,22 @@ async function request(action: string, body?: Record<string, unknown>): Promise<
     return { success: false, error: 'Impossible de contacter le serveur. Vérifiez votre connexion.' };
   }
 }
-export async function registerUser(email: string, password: string): Promise<AuthResult> { return request('register', { email: email.trim().toLowerCase(), password }); }
-export async function verifyEmail(email: string, code: string): Promise<AuthResult> { return request('verify', { email: email.trim().toLowerCase(), code }); }
-export async function resendVerificationCode(email: string): Promise<AuthResult> { return request('resend', { email: email.trim().toLowerCase() }); }
+
+export async function registerUser(email: string, password: string): Promise<AuthResult> {
+  return request('register', { email: email.trim().toLowerCase(), password });
+}
+export async function verifyEmail(email: string, code: string): Promise<AuthResult> {
+  return request('verify', { email: email.trim().toLowerCase(), code });
+}
+export async function resendVerificationCode(email: string): Promise<AuthResult> {
+  return request('resend', { email: email.trim().toLowerCase() });
+}
 export async function loginUser(email: string, password: string): Promise<AuthResult> {
   const result = await request('login', { email: email.trim().toLowerCase(), password });
-  if (result.success && result.user) { currentAuthState = { isAuthenticated: true, user: result.user, sessionToken: null }; notifyObservers(); }
+  if (result.success && result.user) {
+    currentAuthState = { isAuthenticated: true, user: result.user, sessionToken: null };
+    notifyObservers();
+  }
   return result;
 }
 export async function logoutUser(): Promise<void> {
