@@ -48,8 +48,12 @@ type ApiResult = { success: boolean; error?: string; user?: ApiUser | null };
 
 const PRIVILEGED_ROLES = new Set<AdminRole>(['ADMIN', 'SUPER_ADMIN', 'FINANCE', 'SUPPORT']);
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+const AUTH_REQUEST_TIMEOUT_MS = 10_000;
 
 async function authRequest(action: 'login' | 'session' | 'logout', body?: Record<string, unknown>): Promise<ApiResult> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), AUTH_REQUEST_TIMEOUT_MS);
+
   try {
     const response = await fetch(`/api/auth?action=${encodeURIComponent(action)}`, {
       method: body === undefined ? 'GET' : 'POST',
@@ -59,6 +63,7 @@ async function authRequest(action: 'login' | 'session' | 'logout', body?: Record
         : { 'Content-Type': 'application/json', Accept: 'application/json' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       cache: 'no-store',
+      signal: controller.signal,
     });
     const payload: unknown = await response.json().catch(() => ({}));
     const data = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
@@ -71,8 +76,14 @@ async function authRequest(action: 'login' | 'session' | 'logout', body?: Record
       user: data.user && typeof data.user === 'object' ? data.user as ApiUser : null,
     };
   } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      console.error(`Admin authentication request timed out: ${action}`);
+      return { success: false, error: 'Le serveur met trop de temps à répondre. Veuillez réessayer.' };
+    }
     console.error('Admin authentication request failed:', error);
     return { success: false, error: 'Impossible de contacter le serveur. Vérifiez votre connexion.' };
+  } finally {
+    window.clearTimeout(timeout);
   }
 }
 
@@ -158,18 +169,37 @@ class AuthManager {
 
   async restoreSession(): Promise<boolean> {
     if (this.restorePromise) return this.restorePromise;
-    this.state = { ...this.state, isLoading: true };
+    this.state = { ...this.state, isLoading: true, error: null };
     this.notify();
     this.restorePromise = (async () => {
-      const result = await authRequest('session');
-      const user = result.success && result.user ? mapAdminUser(result.user) : null;
-      if (user) {
-        this.setSignedIn(user);
-        return true;
+      try {
+        const result = await authRequest('session');
+        const user = result.success && result.user ? mapAdminUser(result.user) : null;
+        if (user) {
+          this.setSignedIn(user);
+          return true;
+        }
+        this.state = {
+          isAuthenticated: false,
+          user: null,
+          session: null,
+          error: result.error ?? null,
+          isLoading: false,
+        };
+        this.notify();
+        return false;
+      } catch (error) {
+        console.error('Admin session restoration failed:', error);
+        this.state = {
+          isAuthenticated: false,
+          user: null,
+          session: null,
+          error: 'Impossible de vérifier la session sécurisée.',
+          isLoading: false,
+        };
+        this.notify();
+        return false;
       }
-      this.state = { isAuthenticated: false, user: null, session: null, error: null, isLoading: false };
-      this.notify();
-      return false;
     })();
     try { return await this.restorePromise; }
     finally { this.restorePromise = null; }
