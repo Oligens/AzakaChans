@@ -6,6 +6,7 @@ import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminJackpotPage } from './pages/AdminJackpotPage';
 import { AdminPlatformPage } from './pages/AdminPlatformPage';
 import { AdminSeriesTicketsPage } from './pages/AdminSeriesTicketsPage';
+import { AdminDrawPage } from './pages/AdminDrawPage';
 import { AdminFinancialEnginePage } from './pages/AdminFinancialEnginePage';
 import { AdminLedgerPage } from './pages/AdminLedgerPage';
 import { AdminWithdrawalsPage } from './pages/AdminWithdrawalsPage';
@@ -48,6 +49,7 @@ function App() {
     <Route path="/gestion-privee/jackpot" element={admin(<AdminJackpotPage />)} />
     <Route path="/gestion-privee/plateforme" element={admin(<AdminPlatformPage />)} />
     <Route path="/gestion-privee/series-tickets" element={admin(<AdminSeriesTicketsPage />)} />
+    <Route path="/gestion-privee/tirage" element={admin(<AdminDrawPage />)} />
     <Route path="/gestion-privee/moteur-financier" element={admin(<AdminFinancialEnginePage />)} />
     <Route path="/gestion-privee/registre-comptable" element={admin(<AdminLedgerPage />)} />
     <Route path="/gestion-privee/retraits" element={admin(<AdminWithdrawalsPage />)} />
