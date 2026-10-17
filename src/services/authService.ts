@@ -13,7 +13,6 @@ export interface AdminUser {
 }
 
 export interface Session {
-  // The real session token is held in an HttpOnly cookie and is never exposed to JS.
   token: string;
   userId: string;
   role: string;
@@ -52,10 +51,12 @@ const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function authRequest(action: 'login' | 'session' | 'logout', body?: Record<string, unknown>): Promise<ApiResult> {
   try {
-    const response = await fetch(`/api/auth/${action}`, {
+    const response = await fetch(`/api/auth?action=${encodeURIComponent(action)}`, {
       method: body === undefined ? 'GET' : 'POST',
       credentials: 'same-origin',
-      headers: body === undefined ? { Accept: 'application/json' } : { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: body === undefined
+        ? { Accept: 'application/json' }
+        : { 'Content-Type': 'application/json', Accept: 'application/json' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       cache: 'no-store',
     });
@@ -139,9 +140,14 @@ class AuthManager {
 
     const user = mapAdminUser(result.user);
     if (!user) {
-      // Do not leave a normal customer signed in after they try the admin portal.
       await authRequest('logout', {});
-      this.state = { isAuthenticated: false, user: null, session: null, error: 'Ce compte ne dispose pas des droits d’administration.', isLoading: false };
+      this.state = {
+        isAuthenticated: false,
+        user: null,
+        session: null,
+        error: 'Ce compte ne dispose pas des droits d’administration.',
+        isLoading: false,
+      };
       this.notify();
       return { success: false, error: this.state.error ?? undefined };
     }
