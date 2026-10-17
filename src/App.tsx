@@ -8,6 +8,7 @@ import { AdminPlatformPage } from './pages/AdminPlatformPage';
 import { AdminSeriesTicketsPage } from './pages/AdminSeriesTicketsPage';
 import { AdminFinancialEnginePage } from './pages/AdminFinancialEnginePage';
 import { AdminLedgerPage } from './pages/AdminLedgerPage';
+import { AdminWithdrawalsPage } from './pages/AdminWithdrawalsPage';
 import { AdminClaimsPage } from './pages/AdminClaimsPage';
 import { AdminCyclesPage } from './pages/AdminCyclesPage';
 import { AdminTestsPage } from './pages/AdminTestsPage';
@@ -49,7 +50,7 @@ function App() {
     <Route path="/gestion-privee/series-tickets" element={admin(<AdminSeriesTicketsPage />)} />
     <Route path="/gestion-privee/moteur-financier" element={admin(<AdminFinancialEnginePage />)} />
     <Route path="/gestion-privee/registre-comptable" element={admin(<AdminLedgerPage />)} />
-    <Route path="/gestion-privee/retraits" element={admin(<AdminDashboard />)} />
+    <Route path="/gestion-privee/retraits" element={admin(<AdminWithdrawalsPage />)} />
     <Route path="/gestion-privee/reclamations" element={admin(<AdminClaimsPage />)} />
     <Route path="/gestion-privee/cycles-horaires" element={admin(<AdminCyclesPage />)} />
     <Route path="/gestion-privee/tests" element={admin(<AdminTestsPage />)} />
