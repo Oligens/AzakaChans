@@ -19,12 +19,8 @@ WHERE t.id = ranked.id;
 ALTER TABLE tickets ALTER COLUMN batch_sequence SET NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_tickets_batch_sequence ON tickets(batch_id, batch_sequence);
 
--- Normalize the status used by the first generator implementation and erase
--- undisclosed legacy outcomes. Historical SOLD/REVEALED/REDEEMED results stay immutable.
-UPDATE tickets
-SET status='CREATED', prize_amount=NULL, prize_tier=NULL
-WHERE status='AVAILABLE' AND owner_id IS NULL;
-
+-- Undisclosed legacy inventory loses its old predetermined outcome. Historical
+-- SOLD/REVEALED/REDEEMED outcomes remain unchanged.
 UPDATE tickets
 SET prize_amount=NULL, prize_tier=NULL
 WHERE status='CREATED';
@@ -37,7 +33,6 @@ ALTER TABLE tickets ADD CONSTRAINT tickets_status_transitions CHECK (
     (status = 'REDEEMED' AND owner_id IS NOT NULL AND prize_amount IS NOT NULL AND revealed_at IS NOT NULL AND redeemed_at IS NOT NULL)
 );
 
--- Client retries cannot create a second inventory operation for the same batch/key.
 CREATE TABLE IF NOT EXISTS azaka_ticket_generation_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     batch_id UUID NOT NULL REFERENCES ticket_batches(id) ON DELETE RESTRICT,
@@ -50,8 +45,6 @@ CREATE TABLE IF NOT EXISTS azaka_ticket_generation_requests (
     UNIQUE(batch_id, request_key)
 );
 
--- One immutable draw per ticket. The nonce is stored so the result can be
--- independently recomputed/audited; the derived roll drives the prize.
 CREATE TABLE IF NOT EXISTS ticket_draws (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ticket_id UUID NOT NULL UNIQUE REFERENCES tickets(id) ON DELETE RESTRICT,
