@@ -4,6 +4,15 @@ import { ShopPage } from './pages/ShopPage';
 import { AdminLoginPage } from './pages/AdminLoginPage';
 import { AdminDashboard } from './pages/AdminDashboard';
 import { AdminJackpotPage } from './pages/AdminJackpotPage';
+import { AdminPlatformPage } from './pages/AdminPlatformPage';
+import { AdminSeriesTicketsPage } from './pages/AdminSeriesTicketsPage';
+import { AdminFinancialEnginePage } from './pages/AdminFinancialEnginePage';
+import { AdminLedgerPage } from './pages/AdminLedgerPage';
+import { AdminClaimsPage } from './pages/AdminClaimsPage';
+import { AdminCyclesPage } from './pages/AdminCyclesPage';
+import { AdminTestsPage } from './pages/AdminTestsPage';
+import { AdminReportsPage } from './pages/AdminReportsPage';
+import { AdminAuditPage } from './pages/AdminAuditPage';
 import { ArchitecturePage } from './pages/ArchitecturePage';
 import { WalletPage } from './pages/WalletPage';
 import { TicketsPage } from './pages/TicketsPage';
@@ -21,17 +30,13 @@ import { ProfilePage } from './pages/ProfilePage';
 import { SettingsPage } from './pages/SettingsPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PrivateRoute } from './components/PrivateRoute';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { loadSession } from './services/authService';
 import { restoreSession } from './services/userAuthService';
 
-function AdminModule({ title, description }: { title:string; description:string }) {
-  return <div className="min-h-screen p-8" style={{background:'linear-gradient(135deg,#07162E 0%,#0B1F3A 100%)',color:'#F5F0E6'}}><div className="max-w-5xl mx-auto"><a href="/gestion-privee" className="text-sm" style={{color:'#AAB7C9'}}>← Retour au tableau de bord</a><div className="card-premium p-10 mt-6"><h1 className="text-3xl font-bold">{title}</h1><p className="mt-3" style={{color:'#AAB7C9'}}>{description}</p><p className="mt-6 text-sm" style={{color:'#D4AF37'}}>Module sécurisé — branchement aux données opérationnelles en cours.</p></div></div></div>;
-}
-
 function App() {
   useEffect(() => { loadSession(); restoreSession(); }, []);
-  const admin = (element: React.ReactNode) => <ProtectedRoute requiredRole="ADMIN">{element}</ProtectedRoute>;
+  const admin = (element: ReactNode) => <ProtectedRoute requiredRole="ADMIN">{element}</ProtectedRoute>;
   return <BrowserRouter><Routes>
     <Route path="/" element={<HomePage />} />
     <Route path="/inscription" element={<RegisterPage />} /><Route path="/verification-email" element={<VerifyEmailPage />} /><Route path="/connexion" element={<LoginPage />} />
@@ -40,16 +45,16 @@ function App() {
     <Route path="/gestion-privee/connexion" element={<AdminLoginPage />} />
     <Route path="/gestion-privee" element={admin(<AdminDashboard />)} />
     <Route path="/gestion-privee/jackpot" element={admin(<AdminJackpotPage />)} />
-    <Route path="/gestion-privee/plateforme" element={admin(<AdminModule title="État Plateforme" description="Surveillance des services, santé de la plateforme et disponibilité." />)} />
-    <Route path="/gestion-privee/series-tickets" element={admin(<AdminModule title="Séries & Tickets" description="Gestion des séries, lots, tickets publiés et états opérationnels." />)} />
-    <Route path="/gestion-privee/moteur-financier" element={admin(<AdminModule title="Moteur Financier" description="Supervision des flux financiers et règles de couverture." />)} />
-    <Route path="/gestion-privee/registre-comptable" element={admin(<AdminModule title="Registre Comptable" description="Consultation du registre comptable et des écritures de la plateforme." />)} />
-    <Route path="/gestion-privee/retraits" element={admin(<AdminDashboard />)} />
-    <Route path="/gestion-privee/reclamations" element={admin(<AdminModule title="Réclamations" description="Gestion et suivi des réclamations utilisateurs." />)} />
-    <Route path="/gestion-privee/cycles-horaires" element={admin(<AdminModule title="Cycles Horaires" description="Configuration et supervision des cycles horaires." />)} />
-    <Route path="/gestion-privee/tests" element={admin(<AdminModule title="Tests Automatisés" description="Exécution et suivi des contrôles automatisés de la plateforme." />)} />
-    <Route path="/gestion-privee/rapports" element={admin(<AdminModule title="Rapports" description="Rapports opérationnels, financiers et statistiques." />)} />
-    <Route path="/gestion-privee/audit" element={admin(<AdminModule title="Audit & Sécurité" description="Journal d'audit, contrôles de sécurité et traçabilité des opérations." />)} />
+    <Route path="/gestion-privee/plateforme" element={admin(<AdminPlatformPage />)} />
+    <Route path="/gestion-privee/series-tickets" element={admin(<AdminSeriesTicketsPage />)} />
+    <Route path="/gestion-privee/moteur-financier" element={admin(<AdminFinancialEnginePage />)} />
+    <Route path="/gestion-privee/registre-comptable" element={admin(<AdminLedgerPage />)} />
+    <Route path="/gestion-privee/retraits" element={admin(<AdminDashboard initialSection="withdrawals" />)} />
+    <Route path="/gestion-privee/reclamations" element={admin(<AdminClaimsPage />)} />
+    <Route path="/gestion-privee/cycles-horaires" element={admin(<AdminCyclesPage />)} />
+    <Route path="/gestion-privee/tests" element={admin(<AdminTestsPage />)} />
+    <Route path="/gestion-privee/rapports" element={admin(<AdminReportsPage />)} />
+    <Route path="/gestion-privee/audit" element={admin(<AdminAuditPage />)} />
     <Route path="/gestion-privee/architecture" element={<ProtectedRoute requiredRole="SUPER_ADMIN"><ArchitecturePage /></ProtectedRoute>} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes></BrowserRouter>;
