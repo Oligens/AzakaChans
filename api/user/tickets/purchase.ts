@@ -5,11 +5,7 @@ type Res = { setHeader(name: string, value: string): void; status(code: number):
 
 let pool: Pool | null = null;
 function getPool(databaseUrl: string) { return pool ??= new Pool({ connectionString: databaseUrl, max: 1 }); }
-function cookieValue(req: Req, name: string): string | null {
-  const header = req.headers.cookie; const raw = Array.isArray(header) ? header[0] : header;
-  const entry = raw?.split(';').map(v => v.trim()).find(v => v.startsWith(name + '='));
-  if (!entry) return null; try { return decodeURIComponent(entry.slice(name.length + 1)); } catch { return null; }
-}
+function cookieValue(req: Req, name: string): string | null { const header = req.headers.cookie; const raw = Array.isArray(header) ? header[0] : header; const entry = raw?.split(';').map(v => v.trim()).find(v => v.startsWith(name + '=')); if (!entry) return null; try { return decodeURIComponent(entry.slice(name.length + 1)); } catch { return null; } }
 
 export default async function handler(req: Req, res: Res) {
   res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -44,7 +40,7 @@ export default async function handler(req: Req, res: Res) {
       await client.query(`UPDATE wallets SET balance=balance-$1,updated_at=NOW() WHERE id=$2`, [price, wallet.rows[0].id]);
       const key = `ticket-purchase:${t.id}`;
       await client.query(`INSERT INTO transactions(type,debit_account,credit_account,amount,currency,reference,description,status,idempotency_key,metadata,completed_at) VALUES('TICKET_PURCHASE',$1,'platform:tickets',$2,'HTG',$3,$4,'COMPLETED',$5,$6::jsonb,NOW()) ON CONFLICT(idempotency_key) DO NOTHING`, [`user-${userId}-wallet`, price, String(t.public_id), `Achat du ticket ${t.public_id}`, key, JSON.stringify({ ticketId: t.id, userId, price })]);
-      purchased.push({ id: String(t.id), publicId: t.public_id, type: t.type, status: 'SOLD', price: Number(t.price), prizeAmount: Number(t.prize_amount), prizeTier: t.prize_tier === null ? null : Number(t.prize_tier) });
+      purchased.push({ id: String(t.id), publicId: t.public_id, type: t.type, status: 'SOLD', price: Number(t.price), prizeAmount: null, prizeTier: null });
     }
     const finalWallet = await client.query(`SELECT balance,(balance-reserved_amount) AS available_balance FROM wallets WHERE id=$1`, [wallet.rows[0].id]);
     await client.query('COMMIT');
