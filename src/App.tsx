@@ -49,7 +49,7 @@ function App() {
     <Route path="/gestion-privee/series-tickets" element={admin(<AdminSeriesTicketsPage />)} />
     <Route path="/gestion-privee/moteur-financier" element={admin(<AdminFinancialEnginePage />)} />
     <Route path="/gestion-privee/registre-comptable" element={admin(<AdminLedgerPage />)} />
-    <Route path="/gestion-privee/retraits" element={admin(<AdminDashboard initialSection="withdrawals" />)} />
+    <Route path="/gestion-privee/retraits" element={admin(<AdminDashboard />)} />
     <Route path="/gestion-privee/reclamations" element={admin(<AdminClaimsPage />)} />
     <Route path="/gestion-privee/cycles-horaires" element={admin(<AdminCyclesPage />)} />
     <Route path="/gestion-privee/tests" element={admin(<AdminTestsPage />)} />
