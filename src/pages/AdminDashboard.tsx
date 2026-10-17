@@ -23,7 +23,7 @@ export function AdminDashboard(){
  const [pendingAlertCount,setPendingAlertCount]=useState(0);
  const seenPendingRef=useRef<Set<string>>(new Set());
  const alertBaselineReady=useRef(false);
- const menuItems=[['overview','Vue d\\'ensemble',LayoutDashboard],['jackpot','Jackpot Itinérant',Sparkles],['platform','État Plateforme',Activity],['series','Séries & Tickets',Ticket],['financial','Moteur Financier',DollarSign],['ledger','Registre Comptable',Database],['withdrawals','Retraits',ArrowDownToLine],['claims','Réclamations',FileText],['cycles','Cycles Horaires',RefreshCw],['tests','Tests Automatisés',Zap],['reports','Rapports',PieChart],['audit','Audit & Sécurité',Shield]] as const;
+ const menuItems=[['overview','Vue d\'ensemble',LayoutDashboard],['jackpot','Jackpot Itinérant',Sparkles],['platform','État Plateforme',Activity],['series','Séries & Tickets',Ticket],['financial','Moteur Financier',DollarSign],['ledger','Registre Comptable',Database],['withdrawals','Retraits',ArrowDownToLine],['claims','Réclamations',FileText],['cycles','Cycles Horaires',RefreshCw],['tests','Tests Automatisés',Zap],['reports','Rapports',PieChart],['audit','Audit & Sécurité',Shield]] as const;
 
  const browserNotify=(w:Withdrawal)=>{
   if(typeof window!=='undefined'&&'Notification' in window&&Notification.permission==='granted'){
