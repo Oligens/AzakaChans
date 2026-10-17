@@ -15,6 +15,49 @@ export default async function handler(req:Req,res:Res){
  try{
   const actor=await admin(client,req);if(!actor)return res.status(403).json({success:false,error:'Accès administrateur requis.'});
   if(req.method==='GET'){
+   const action=clean(req.query?.action,24).toLowerCase();
+   if(action==='overview'){
+    const metrics=await client.query(`
+      SELECT
+        COALESCE(SUM(amount) FILTER (WHERE type='TICKET_PURCHASE' AND status='COMPLETED'),0) AS ticket_sales,
+        COALESCE(SUM(amount) FILTER (WHERE type='WIN_CREDIT' AND status='COMPLETED'),0) AS prizes_paid,
+        COUNT(*) FILTER (WHERE type='TICKET_PURCHASE' AND status='COMPLETED') AS purchase_transactions
+      FROM transactions
+    `);
+    const inventory=await client.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE t.status IN ('SOLD','REVEALED')) AS sold_tickets,
+        COUNT(*) AS published_tickets
+      FROM tickets t
+      JOIN ticket_batches b ON b.id=t.batch_id
+      WHERE b.status='PUBLISHED'
+    `);
+    const withdrawals=await client.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE status='PENDING') AS pending_count,
+        COALESCE(SUM(amount) FILTER (WHERE status='PAID'),0) AS withdrawals_paid
+      FROM withdrawal_requests
+    `);
+    const users=await client.query(`SELECT COUNT(*) FILTER (WHERE is_active=TRUE AND is_suspended=FALSE) AS active_users FROM users`);
+    const sales=Number(metrics.rows[0].ticket_sales||0);
+    const prizes=Number(metrics.rows[0].prizes_paid||0);
+    const published=Number(inventory.rows[0].published_tickets||0);
+    const sold=Number(inventory.rows[0].sold_tickets||0);
+    return res.status(200).json({success:true,metrics:{
+      netRevenue:sales-prizes,
+      ticketSales:sales,
+      prizesPaid:prizes,
+      coverage:published>0?Math.round((sold/published)*100):0,
+      soldTickets:sold,
+      publishedTickets:published,
+      purchaseTransactions:Number(metrics.rows[0].purchase_transactions||0),
+      pendingWithdrawals:Number(withdrawals.rows[0].pending_count||0),
+      withdrawalsPaid:Number(withdrawals.rows[0].withdrawals_paid||0),
+      activeUsers:Number(users.rows[0].active_users||0),
+      currency:'HTG',
+      generatedAt:new Date().toISOString()
+    }});
+   }
    const status=clean(req.query?.status,16).toUpperCase();
    const params:any[]=[];let where='';if(['PENDING','VALIDATED','REJECTED','PAID'].includes(status)){params.push(status);where='WHERE r.status=$1';}
    const rows=await client.query(`SELECT r.id,r.user_id,r.wallet_id,r.amount,r.currency,r.method,r.beneficiary_name,r.destination_phone,r.bank_name,r.bank_account_number,r.status,r.requested_at,r.validated_at,r.rejected_at,r.paid_at,r.processed_by,r.rejection_reason,r.admin_notes,r.payment_reference,r.updated_at,u.email FROM withdrawal_requests r JOIN users u ON u.id=r.user_id ${where} ORDER BY r.requested_at DESC LIMIT 200`,params);
@@ -45,5 +88,5 @@ export default async function handler(req:Req,res:Res){
    await client.query(`INSERT INTO withdrawal_audit_log(withdrawal_id,actor_user_id,action,from_status,to_status,amount,notes,metadata) VALUES($1,$2,'MARK_PAID',$3,'PAID',$4,$5,$6::jsonb)`,[id,actor.id,from,r.amount,notes||'Retrait marqué comme payé.',JSON.stringify({paymentReference})]);
   }
   await client.query('COMMIT');return res.status(200).json({success:true,message:'Demande de retrait mise à jour.',status:action==='VALIDATE'?'VALIDATED':action==='REJECT'?'REJECTED':'PAID'});
- }catch(error){try{await client.query('ROLLBACK');}catch{};console.error('Admin withdrawals API error:',error instanceof Error?error.message:'unknown');return res.status(500).json({success:false,error:'Impossible de traiter la demande de retrait.'});}finally{client.release();}
+ }catch(error){try{await client.query('ROLLBACK');}catch{};console.error('Admin withdrawals API error:',error instanceof Error?error.message:'unknown');return res.status(500).json({success:false,error:'Impossible de traiter la demande.'});}finally{client.release();}
 }
