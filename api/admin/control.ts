@@ -3,7 +3,7 @@ import { Pool } from '@neondatabase/serverless';
 type Req={method?:string;body?:unknown;headers:Record<string,string|string[]|undefined>;query?:Record<string,string|string[]|undefined>};
 type Res={setHeader(name:string,value:string):void;status(code:number):Res;json(body:unknown):void};
 let pool:Pool|null=null;
-function getPool(url:string){return pool??=new Pool({connectionString:url,max:1);}
+function getPool(url:string){return pool??=new Pool({connectionString:url,max:1});}
 function cookieValue(req:Req,name:string){const h=req.headers.cookie;const raw=Array.isArray(h)?h[0]:h;const e=raw?.split(';').map(v=>v.trim()).find(v=>v.startsWith(name+'='));if(!e)return null;try{return decodeURIComponent(e.slice(name.length+1));}catch{return null;}}
 function clean(v:unknown,max=120){return (Array.isArray(v)?String(v[0]??''):String(v??'')).trim().replace(/\s+/g,' ').slice(0,max);}
 function number(v:unknown){const n=typeof v==='number'?v:Number(String(v??'').replace(/\s/g,'').replace(',','.'));return Number.isFinite(n)?n:NaN;}
