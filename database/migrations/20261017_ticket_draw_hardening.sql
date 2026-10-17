@@ -3,13 +3,9 @@
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
--- A generated ticket has a stable sequence inside its batch. This is the
--- authoritative identity used by the generator; public_id remains unique.
 ALTER TABLE tickets ADD COLUMN IF NOT EXISTS batch_sequence INTEGER;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_tickets_public_id ON tickets(public_id);
 
--- Backfill legacy inventory deterministically before enforcing the per-batch
--- uniqueness rule. Existing duplicate sequence values are assigned by id order.
 WITH ranked AS (
   SELECT id, ROW_NUMBER() OVER (PARTITION BY batch_id ORDER BY created_at, id) AS seq
   FROM tickets
@@ -23,8 +19,16 @@ WHERE t.id = ranked.id;
 ALTER TABLE tickets ALTER COLUMN batch_sequence SET NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_tickets_batch_sequence ON tickets(batch_id, batch_sequence);
 
--- The result MUST NOT exist before the server-side draw. This removes the old
--- "predetermined prize" invariant while keeping already revealed history valid.
+-- Normalize the status used by the first generator implementation and erase
+-- undisclosed legacy outcomes. Historical SOLD/REVEALED/REDEEMED results stay immutable.
+UPDATE tickets
+SET status='CREATED', prize_amount=NULL, prize_tier=NULL
+WHERE status='AVAILABLE' AND owner_id IS NULL;
+
+UPDATE tickets
+SET prize_amount=NULL, prize_tier=NULL
+WHERE status='CREATED';
+
 ALTER TABLE tickets DROP CONSTRAINT IF EXISTS tickets_status_transitions;
 ALTER TABLE tickets ADD CONSTRAINT tickets_status_transitions CHECK (
     (status = 'CREATED' AND owner_id IS NULL AND prize_amount IS NULL AND revealed_at IS NULL) OR
@@ -33,8 +37,21 @@ ALTER TABLE tickets ADD CONSTRAINT tickets_status_transitions CHECK (
     (status = 'REDEEMED' AND owner_id IS NOT NULL AND prize_amount IS NOT NULL AND revealed_at IS NOT NULL AND redeemed_at IS NOT NULL)
 );
 
+-- Client retries cannot create a second inventory operation for the same batch/key.
+CREATE TABLE IF NOT EXISTS azaka_ticket_generation_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    batch_id UUID NOT NULL REFERENCES ticket_batches(id) ON DELETE RESTRICT,
+    request_key VARCHAR(128) NOT NULL,
+    requested_quantity INTEGER NOT NULL CHECK (requested_quantity > 0),
+    generated_quantity INTEGER NOT NULL DEFAULT 0 CHECK (generated_quantity >= 0),
+    first_sequence INTEGER,
+    last_sequence INTEGER,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE(batch_id, request_key)
+);
+
 -- One immutable draw per ticket. The nonce is stored so the result can be
--- independently recomputed/audited; the derived roll is what drives the prize.
+-- independently recomputed/audited; the derived roll drives the prize.
 CREATE TABLE IF NOT EXISTS ticket_draws (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ticket_id UUID NOT NULL UNIQUE REFERENCES tickets(id) ON DELETE RESTRICT,
