@@ -1,0 +1,37 @@
+name: Wire admin module routes
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/wire-admin-routes.yml'
+      - 'src/pages/AdminDashboard.tsx'
+      - 'src/App.tsx'
+permissions:
+  contents: write
+jobs:
+  wire:
+    if: ${{ !contains(github.event.head_commit.message, 'wire admin navigation') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wire sidebar module navigation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('src/pages/AdminDashboard.tsx')
+          s=p.read_text()
+          old="<button key={id} onClick={()=>setSection(id)} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${section===id?'bg-white/10':''}`} style={{color:section===id?'#F5F0E6':'#AAB7C9'}}><Icon className=\"w-5 h-5\"/>{text}{id==='withdrawals'&&pendingAlertCount>0&&<span className=\"ml-auto min-w-6 h-6 px-1.5 rounded-full flex items-center justify-center text-xs font-bold\" style={{background:'#EF4444',color:'#fff'}}>{pendingAlertCount>99?'99+':pendingAlertCount}</span>}</button>"
+          new="<button key={id} onClick={()=>{const routes:Record<string,string>={jackpot:'/gestion-privee/jackpot',platform:'/gestion-privee/plateforme',series:'/gestion-privee/series-tickets',financial:'/gestion-privee/moteur-financier',ledger:'/gestion-privee/registre-comptable',withdrawals:'/gestion-privee/retraits',claims:'/gestion-privee/reclamations',cycles:'/gestion-privee/cycles-horaires',tests:'/gestion-privee/tests',reports:'/gestion-privee/rapports',audit:'/gestion-privee/audit'}; if(routes[id]) window.location.href=routes[id]; else setSection(id);}} className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition ${section===id?'bg-white/10':''}`} style={{color:section===id?'#F5F0E6':'#AAB7C9'}}><Icon className=\"w-5 h-5\"/>{text}{id==='withdrawals'&&pendingAlertCount>0&&<span className=\"ml-auto min-w-6 h-6 px-1.5 rounded-full flex items-center justify-center text-xs font-bold\" style={{background:'#EF4444',color:'#fff'}}>{pendingAlertCount>99?'99+':pendingAlertCount}</span>}</button>"
+          if old not in s:
+            raise SystemExit('sidebar pattern not found')
+          p.write_text(s.replace(old,new))
+          PY
+      - name: Commit and remove workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/pages/AdminDashboard.tsx .github/workflows/wire-admin-routes.yml
+          git commit -m 'fix(admin): wire admin navigation to real module routes'
+          git rm .github/workflows/wire-admin-routes.yml
+          git commit -m 'chore(ci): remove one-shot admin route workflow'
+          git push
