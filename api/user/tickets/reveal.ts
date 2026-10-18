@@ -15,7 +15,7 @@ export default async function handler(req: Req, res: Res) {
   if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({success:false,error:'Méthode non autorisée.'});}
   const url=process.env.DATABASE_URL;if(!url)return res.status(503).json({success:false,error:'Base de données non configurée.'});
   const token=cookieValue(req,'azaka_session');if(!token)return res.status(401).json({success:false,error:'Session expirée. Veuillez vous reconnecter.'});
-  const body=req.body&&typeof req.body==='object'?body as Record<string,unknown>:{};
+  const body=req.body&&typeof req.body==='object' ? req.body as Record<string,unknown> : {};
   const ticketId=typeof body.ticketId==='string'?body.ticketId.trim():'';if(!ticketId)return res.status(400).json({success:false,error:'Identifiant du ticket requis.'});
   const db=getPool(url),client=await db.connect();
   try{
