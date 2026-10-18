@@ -6,16 +6,17 @@ type Res = { setHeader(name: string, value: string): void; status(code: number):
 let pool: Pool | null = null;
 function getPool(url: string) { return pool ??= new Pool({ connectionString: url, max: 1 }); }
 function cookieValue(req: Req, name: string): string | null { const h=req.headers.cookie; const raw=Array.isArray(h)?h[0]:h; const e=raw?.split(';').map(v=>v.trim()).find(v=>v.startsWith(name+'=')); if(!e)return null; try{return decodeURIComponent(e.slice(name.length+1));}catch{return null;} }
-function drawFromNonce(nonceHex:string){const roll=Number(BigInt('0x'+nonceHex.slice(0,12))%1000000n);return roll;}
+function drawFromNonce(nonceHex:string){return Number(BigInt('0x'+nonceHex.slice(0,12))%1000000n);}
 function prizeForDraw(roll:number,winRate:number,price:number,maxPrize:number){const threshold=Math.floor(winRate*1000000);if(roll>=threshold)return {winning:false,amount:0,tier:0};const relative=roll/Math.max(1,threshold);if(relative<0.75)return {winning:true,amount:Math.min(price*2,maxPrize),tier:1};if(relative<0.95)return {winning:true,amount:Math.min(price*10,maxPrize),tier:2};return {winning:true,amount:maxPrize,tier:3};}
-function ticketJson(t:any,d:any,walletBalance:number|null){return {id:String(t.id),publicId:t.public_id,type:t.type,status:t.status,price:Number(t.price),prizeAmount:Number(t.prize_amount||0),prizeTier:t.prize_tier===null?null:Number(t.prize_tier),purchasedAt:t.purchased_at,revealedAt:t.revealed_at,draw:d?{id:String(d.id),algorithmVersion:d.algorithm_version,nonceHash:d.nonce_hash,roll:Number(d.roll),winning:Boolean(d.winning),prizeAmount:Number(d.prize_amount),prizeTier:Number(d.prize_tier),drawnAt:d.drawn_at}:null},prizeAmount:Number(t.prize_amount||0),walletBalance};}
+function ticketJson(t:any,d:any,walletBalance:number|null){return {id:String(t.id),publicId:t.public_id,type:t.type,status:t.status,price:Number(t.price),prizeAmount:Number(t.prize_amount||0),prizeTier:t.prize_tier===null?null:Number(t.prize_tier),purchasedAt:t.purchased_at,revealedAt:t.revealed_at,draw:d?{id:String(d.id),algorithmVersion:d.algorithm_version,nonceHash:d.nonce_hash,roll:Number(d.roll),winning:Boolean(d.winning),prizeAmount:Number(d.prize_amount),prizeTier:Number(d.prize_tier),drawnAt:d.drawn_at}:null,walletBalance};}
 
 export default async function handler(req: Req, res: Res) {
   res.setHeader('Cache-Control','no-store, max-age=0'); res.setHeader('Content-Type','application/json; charset=utf-8');
   if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({success:false,error:'Méthode non autorisée.'});}
   const url=process.env.DATABASE_URL;if(!url)return res.status(503).json({success:false,error:'Base de données non configurée.'});
   const token=cookieValue(req,'azaka_session');if(!token)return res.status(401).json({success:false,error:'Session expirée. Veuillez vous reconnecter.'});
-  const body=req.body&&typeof req.body==='object'?req.body as Record<string,unknown>:{};const ticketId=typeof body.ticketId==='string'?body.ticketId.trim():'';if(!ticketId)return res.status(400).json({success:false,error:'Identifiant du ticket requis.'});
+  const body=req.body&&typeof req.body==='object'?body as Record<string,unknown>:{};
+  const ticketId=typeof body.ticketId==='string'?body.ticketId.trim():'';if(!ticketId)return res.status(400).json({success:false,error:'Identifiant du ticket requis.'});
   const db=getPool(url),client=await db.connect();
   try{
     await client.query('BEGIN');
