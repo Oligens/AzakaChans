@@ -15,6 +15,7 @@ import { AdminCyclesPage } from './pages/AdminCyclesPage';
 import { AdminTestsPage } from './pages/AdminTestsPage';
 import { AdminReportsPage } from './pages/AdminReportsPage';
 import { AdminAuditPage } from './pages/AdminAuditPage';
+import { AdminUsersPage } from './pages/AdminUsersPage';
 import { ArchitecturePage } from './pages/ArchitecturePage';
 import { WalletPage } from './pages/WalletPage';
 import { TicketsPage } from './pages/TicketsPage';
@@ -37,7 +38,7 @@ import { loadSession } from './services/authService';
 import { restoreSession } from './services/userAuthService';
 
 function App() {
-  useEffect(() => { loadSession(); restoreSession(); }, []);
+  useEffect(() => { loadSession(); void restoreSession(); }, []);
   const admin = (element: ReactNode) => <ProtectedRoute requiredRole="ADMIN">{element}</ProtectedRoute>;
   return <BrowserRouter><Routes>
     <Route path="/" element={<HomePage />} />
@@ -46,6 +47,7 @@ function App() {
     <Route path="/profil" element={<PrivateRoute><ProfilePage /></PrivateRoute>} /><Route path="/parametres" element={<PrivateRoute><SettingsPage /></PrivateRoute>} /><Route path="/boutique" element={<PrivateRoute><ShopPage /></PrivateRoute>} /><Route path="/portefeuille" element={<PrivateRoute><WalletPage /></PrivateRoute>} /><Route path="/mes-tickets" element={<PrivateRoute><TicketsPage /></PrivateRoute>} /><Route path="/retrait" element={<PrivateRoute><WithdrawalPage /></PrivateRoute>} />
     <Route path="/gestion-privee/connexion" element={<AdminLoginPage />} />
     <Route path="/gestion-privee" element={admin(<AdminDashboard />)} />
+    <Route path="/gestion-privee/utilisateurs" element={admin(<AdminUsersPage />)} />
     <Route path="/gestion-privee/jackpot" element={admin(<AdminJackpotPage />)} />
     <Route path="/gestion-privee/plateforme" element={admin(<AdminPlatformPage />)} />
     <Route path="/gestion-privee/series-tickets" element={admin(<AdminSeriesTicketsPage />)} />
