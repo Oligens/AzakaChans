@@ -1,78 +1,13 @@
-import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
-
-type Req = { method?: string; body?: any; headers: Record<string, string | string[] | undefined> };
-type Res = { setHeader(name: string, value: string | string[]): void; status(code: number): Res; json(body: unknown): void };
-type Row = Record<string, any>;
-type Sql = NeonQueryFunction<false, false>;
-
-function cookieValue(req: Req, name: string): string | null {
-  const header = req.headers.cookie;
-  const raw = Array.isArray(header) ? header[0] : header;
-  const entry = raw?.split(';').map(v => v.trim()).find(v => v.startsWith(name + '='));
-  if (!entry) return null;
-  try { return decodeURIComponent(entry.slice(name.length + 1)); } catch { return null; }
-}
-function error(res: Res, status: number, message: string) { return res.status(status).json({ success: false, error: message }); }
-
-async function authenticateAdmin(sql: Sql, req: Req) {
-  const token = cookieValue(req, 'azaka_session');
-  if (!token) return null;
-  const rows = (await sql`
-    SELECT u.id, u.email, u.full_name, u.role, u.email_verified, u.is_active, u.is_suspended
-    FROM sessions s JOIN users u ON u.id = s.user_id
-    WHERE s.token = ${token} AND s.is_active = TRUE AND s.expires_at > NOW()
-      AND u.is_active = TRUE AND u.is_suspended = FALSE LIMIT 1
-  `) as Row[];
-  const user = rows[0];
-  if (!user || !['ADMIN', 'SUPER_ADMIN'].includes(String(user.role || '').toUpperCase())) return null;
-  return user;
-}
-
-export default async function handler(req: Req, res: Res) {
-  res.setHeader('Cache-Control', 'no-store, max-age=0');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  if (!['GET', 'POST'].includes(req.method || '')) { res.setHeader('Allow', 'GET, POST'); return error(res, 405, 'Méthode non autorisée.'); }
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) return error(res, 503, 'Base de données non configurée.');
-
-  try {
-    const sql: Sql = neon(databaseUrl);
-    if (!(await authenticateAdmin(sql, req))) return error(res, 403, 'Accès administrateur requis.');
-
-    if (req.method === 'POST') {
-      const body = req.body && typeof req.body === 'object' ? req.body : {};
-      const requestedUserId = typeof body.userId === 'string' ? body.userId.trim() : '';
-      const users = requestedUserId
-        ? await sql`SELECT id FROM users WHERE id = ${requestedUserId}::uuid`
-        : await sql`SELECT id FROM users WHERE is_active = TRUE`;
-      for (const user of users as Row[]) {
-        await sql`INSERT INTO user_profiles (user_id) VALUES (${String(user.id)}::uuid) ON CONFLICT (user_id) DO NOTHING`;
-        await sql`INSERT INTO wallets (user_id) VALUES (${String(user.id)}::uuid) ON CONFLICT (user_id) DO NOTHING`;
-      }
-      return res.status(200).json({ success: true, repaired: users.length });
-    }
-
-    const users = (await sql`
-      SELECT u.id, u.email, u.full_name, u.phone, u.role, u.email_verified, u.is_active, u.is_suspended,
-             u.created_at, u.last_login_at, (p.id IS NOT NULL) AS has_profile, (w.id IS NOT NULL) AS has_wallet,
-             COALESCE(w.balance, 0) AS balance, COALESCE(w.available_balance, 0) AS available_balance,
-             (SELECT COUNT(*) FROM tickets t WHERE t.owner_id = u.id) AS ticket_count,
-             (SELECT COUNT(*) FROM sessions s2 WHERE s2.user_id = u.id AND s2.is_active = TRUE AND s2.expires_at > NOW()) AS active_sessions
-      FROM users u LEFT JOIN user_profiles p ON p.user_id = u.id LEFT JOIN wallets w ON w.user_id = u.id
-      ORDER BY u.created_at DESC LIMIT 500
-    `) as Row[];
-
-    return res.status(200).json({
-      success: true,
-      users: users.map(user => ({
-        id: String(user.id), email: user.email, fullName: user.full_name || '', phone: user.phone || '',
-        role: user.role, emailVerified: Boolean(user.email_verified), active: Boolean(user.is_active), suspended: Boolean(user.is_suspended),
-        createdAt: user.created_at, lastLoginAt: user.last_login_at, hasProfile: Boolean(user.has_profile), hasWallet: Boolean(user.has_wallet),
-        balance: Number(user.balance), availableBalance: Number(user.available_balance), ticketCount: Number(user.ticket_count), activeSessions: Number(user.active_sessions),
-      })),
-    });
-  } catch (err) {
-    console.error('Admin users API error:', err instanceof Error ? err.message : 'unknown error');
-    return error(res, 500, 'Impossible de charger la gestion des utilisateurs.');
-  }
-}
+import { Pool } from '@neondatabase/serverless';
+type Req={method?:string;body?:any;headers:Record<string,string|string[]|undefined>;query?:Record<string,string|string[]|undefined>};
+type Res={setHeader(name:string,value:string|string[]):void;status(code:number):Res;json(body:unknown):void};
+let pool:Pool|null=null;function getPool(url:string){return pool??=new Pool({connectionString:url,max:1});}
+function cookieValue(req:Req,name:string){const h=req.headers.cookie;const raw=Array.isArray(h)?h[0]:h;const e=raw?.split(';').map(v=>v.trim()).find(v=>v.startsWith(name+'='));if(!e)return null;try{return decodeURIComponent(e.slice(name.length+1));}catch{return null;}}
+function error(res:Res,status:number,message:string){return res.status(status).json({success:false,error:message});}
+function num(v:unknown){const n=typeof v==='number'?v:Number(String(v??'').replace(/\s/g,'').replace(',','.'));return Number.isFinite(n)?n:NaN;}
+async function authenticateAdmin(client:any,req:Req){const token=cookieValue(req,'azaka_session');if(!token)return null;const r=await client.query(`SELECT u.id,u.email,u.full_name,u.role,u.email_verified,u.is_active,u.is_suspended FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=$1 AND s.is_active=TRUE AND s.expires_at>NOW() AND u.is_active=TRUE AND u.is_suspended=FALSE AND u.email_verified=TRUE LIMIT 1`,[token]);const u=r.rows[0];if(!u||!['ADMIN','SUPER_ADMIN','ADMINISTRATOR'].includes(String(u.role||'').toUpperCase()))return null;return u;}
+async function ensureJackpot(client:any){await client.query(`CREATE TABLE IF NOT EXISTS jackpot_config(id SMALLINT PRIMARY KEY DEFAULT 1 CHECK(id=1),amount NUMERIC(18,2) NOT NULL DEFAULT 100000,currency VARCHAR(3) NOT NULL DEFAULT 'HTG',version BIGINT NOT NULL DEFAULT 1,updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),updated_by UUID NULL REFERENCES users(id))`);await client.query(`CREATE TABLE IF NOT EXISTS jackpot_config_audit(id UUID PRIMARY KEY DEFAULT gen_random_uuid(),jackpot_id SMALLINT NOT NULL DEFAULT 1,actor_user_id UUID NULL REFERENCES users(id),old_amount NUMERIC(18,2),new_amount NUMERIC(18,2) NOT NULL,reserve_available NUMERIC(18,2) NOT NULL DEFAULT 0,coverage_ok BOOLEAN NOT NULL DEFAULT FALSE,created_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);await client.query(`INSERT INTO jackpot_config(id,amount,currency) VALUES(1,100000,'HTG') ON CONFLICT(id) DO NOTHING`);}
+async function reserve(client:any){const r=await client.query(`SELECT COALESCE(SUM(amount) FILTER(WHERE type='TICKET_PURCHASE' AND status='COMPLETED'),0) ticket_sales,COALESCE(SUM(amount) FILTER(WHERE type='WIN_CREDIT' AND status='COMPLETED'),0) prizes_paid,COALESCE(SUM(amount) FILTER(WHERE type='WITHDRAWAL_REQUEST' AND status='COMPLETED'),0) withdrawals_paid FROM transactions`);const x=r.rows[0];const ticketSales=Number(x.ticket_sales||0),prizesPaid=Number(x.prizes_paid||0),withdrawalsPaid=Number(x.withdrawals_paid||0);return {ticketSales,prizesPaid,withdrawalsPaid,availableReserve:Math.max(0,ticketSales-prizesPaid-withdrawalsPaid)};}
+async function jackpot(client:any,req:Req,res:Res){await ensureJackpot(client);const r=await reserve(client);if(req.method==='GET'){const q=await client.query(`SELECT amount,currency,version,updated_at FROM jackpot_config WHERE id=1`);const row=q.rows[0];const amount=Number(row.amount);return res.status(200).json({success:true,jackpot:{amount,currency:row.currency,version:Number(row.version),updatedAt:row.updated_at,coverageOk:r.availableReserve>=amount,reserveAvailable:r.availableReserve,reserveRequired:amount,coverageRatio:amount>0?Math.round(r.availableReserve/amount*10000)/100:100}});}
+const amount=num(req.body?.amount);if(!Number.isFinite(amount)||amount<1||amount>999999999999)return error(res,400,'Montant du jackpot invalide.');if(amount>r.availableReserve)return res.status(409).json({success:false,error:`Jackpot non couvert. Réserve disponible: ${r.availableReserve.toLocaleString('fr-FR')} HTG; montant demandé: ${amount.toLocaleString('fr-FR')} HTG.`,coverageOk:false,reserveAvailable:r.availableReserve,reserveRequired:amount});const actor=await authenticateAdmin(client,req);if(!actor)return error(res,403,'Accès administrateur requis.');await client.query('BEGIN');try{const current=await client.query(`SELECT amount FROM jackpot_config WHERE id=1 FOR UPDATE`);const oldAmount=Number(current.rows[0]?.amount??100000);await client.query(`UPDATE jackpot_config SET amount=$1,currency='HTG',version=version+1,updated_at=NOW(),updated_by=$2::uuid WHERE id=1`,[amount,actor.id]);await client.query(`INSERT INTO jackpot_config_audit(jackpot_id,actor_user_id,old_amount,new_amount,reserve_available,coverage_ok) VALUES(1,$1::uuid,$2,$3,$4,TRUE)`,[actor.id,oldAmount,amount,r.availableReserve]);await client.query('COMMIT');return res.status(200).json({success:true,jackpot:{amount,currency:'HTG',coverageOk:true,reserveAvailable:r.availableReserve},previousAmount:oldAmount,message:'Jackpot couvert financièrement et mis à jour.'});}catch(e){try{await client.query('ROLLBACK');}catch{}throw e;}}
+export default async function handler(req:Req,res:Res){res.setHeader('Cache-Control','no-store, max-age=0');res.setHeader('Content-Type','application/json; charset=utf-8');if(!['GET','POST','PATCH'].includes(req.method||'')){res.setHeader('Allow','GET, POST, PATCH');return error(res,405,'Méthode non autorisée.');}const databaseUrl=process.env.DATABASE_URL;if(!databaseUrl)return error(res,503,'Base de données non configurée.');const client=await getPool(databaseUrl).connect();try{const actor=await authenticateAdmin(client,req);if(!actor)return error(res,403,'Accès administrateur requis.');const module=Array.isArray(req.query?.module)?String(req.query?.module[0]??''):String(req.query?.module??'');if(module==='jackpot')return await jackpot(client,req,res);if(req.method==='PATCH')return error(res,404,'Module administratif inconnu.');if(req.method==='POST'){const body=req.body&&typeof req.body==='object'?req.body:{};const requestedUserId=typeof body.userId==='string'?body.userId.trim():'';const users=requestedUserId?await client.query(`SELECT id FROM users WHERE id=$1::uuid`,[requestedUserId]):await client.query(`SELECT id FROM users WHERE is_active=TRUE`);for(const user of users.rows){await client.query(`INSERT INTO user_profiles(user_id) VALUES($1::uuid) ON CONFLICT(user_id) DO NOTHING`,[String(user.id)]);await client.query(`INSERT INTO wallets(user_id) VALUES($1::uuid) ON CONFLICT(user_id) DO NOTHING`,[String(user.id)]);}return res.status(200).json({success:true,repaired:users.rows.length});}const users=await client.query(`SELECT u.id,u.email,u.full_name,u.phone,u.role,u.email_verified,u.is_active,u.is_suspended,u.created_at,u.last_login_at,(p.id IS NOT NULL) has_profile,(w.id IS NOT NULL) has_wallet,COALESCE(w.balance,0) balance,COALESCE(w.available_balance,0) available_balance,(SELECT COUNT(*) FROM tickets t WHERE t.owner_id=u.id) ticket_count,(SELECT COUNT(*) FROM sessions s2 WHERE s2.user_id=u.id AND s2.is_active=TRUE AND s2.expires_at>NOW()) active_sessions FROM users u LEFT JOIN user_profiles p ON p.user_id=u.id LEFT JOIN wallets w ON w.user_id=u.id ORDER BY u.created_at DESC LIMIT 500`);return res.status(200).json({success:true,users:users.rows.map((u:any)=>({id:String(u.id),email:u.email,fullName:u.full_name||'',phone:u.phone||'',role:u.role,emailVerified:Boolean(u.email_verified),active:Boolean(u.is_active),suspended:Boolean(u.is_suspended),createdAt:u.created_at,lastLoginAt:u.last_login_at,hasProfile:Boolean(u.has_profile),hasWallet:Boolean(u.has_wallet),balance:Number(u.balance),availableBalance:Number(u.available_balance),ticketCount:Number(u.ticket_count),activeSessions:Number(u.active_sessions)}))});}catch(e){console.error('Admin users API error:',e instanceof Error?e.message:'unknown');return error(res,500,'Impossible de charger la gestion des utilisateurs.');}finally{client.release();}}
