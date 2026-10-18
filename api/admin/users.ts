@@ -1,8 +1,9 @@
-import { neon } from '@neondatabase/serverless';
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
 
 type Req = { method?: string; body?: any; headers: Record<string, string | string[] | undefined> };
 type Res = { setHeader(name: string, value: string | string[]): void; status(code: number): Res; json(body: unknown): void };
 type Row = Record<string, any>;
+type Sql = NeonQueryFunction<false, false>;
 
 function cookieValue(req: Req, name: string): string | null {
   const header = req.headers.cookie;
@@ -13,7 +14,7 @@ function cookieValue(req: Req, name: string): string | null {
 }
 function error(res: Res, status: number, message: string) { return res.status(status).json({ success: false, error: message }); }
 
-async function authenticateAdmin(sql: ReturnType<typeof neon>, req: Req) {
+async function authenticateAdmin(sql: Sql, req: Req) {
   const token = cookieValue(req, 'azaka_session');
   if (!token) return null;
   const rows = (await sql`
@@ -35,7 +36,7 @@ export default async function handler(req: Req, res: Res) {
   if (!databaseUrl) return error(res, 503, 'Base de données non configurée.');
 
   try {
-    const sql = neon(databaseUrl);
+    const sql: Sql = neon(databaseUrl);
     if (!(await authenticateAdmin(sql, req))) return error(res, 403, 'Accès administrateur requis.');
 
     if (req.method === 'POST') {
