@@ -44,7 +44,7 @@ async function request(action: string, body?: Record<string, unknown>): Promise<
   try {
     const response = await fetch(`/api/auth?action=${encodeURIComponent(action)}`, {
       method: body === undefined ? 'GET' : 'POST',
-      credentials: 'same-origin',
+      credentials: 'include',
       headers: body === undefined
         ? { Accept: 'application/json' }
         : { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -89,15 +89,24 @@ export async function logoutUser(): Promise<void> {
   currentAuthState = { isAuthenticated: false, user: null, sessionToken: null };
   notifyObservers();
 }
+
+async function restoreSessionOnce(): Promise<boolean> {
+  const result = await request('session');
+  currentAuthState = result.success && result.user
+    ? { isAuthenticated: true, user: result.user, sessionToken: null }
+    : { isAuthenticated: false, user: null, sessionToken: null };
+  notifyObservers();
+  return currentAuthState.isAuthenticated;
+}
+
 export async function restoreSession(): Promise<boolean> {
   if (restorePromise) return restorePromise;
   restorePromise = (async () => {
-    const result = await request('session');
-    currentAuthState = result.success && result.user
-      ? { isAuthenticated: true, user: result.user, sessionToken: null }
-      : { isAuthenticated: false, user: null, sessionToken: null };
-    notifyObservers();
-    return currentAuthState.isAuthenticated;
+    if (await restoreSessionOnce()) return true;
+    // Vercel/Browser startup can race the first request after a navigation.
+    // Retry once before declaring the private session lost.
+    await new Promise(resolve => window.setTimeout(resolve, 250));
+    return restoreSessionOnce();
   })();
   try { return await restorePromise; } finally { restorePromise = null; }
 }
